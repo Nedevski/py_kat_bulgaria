@@ -9,7 +9,7 @@ KAT_OBLIGATIONS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?mode=1&oblige
 
 
 class KatPersonDetails:
-    """Holds the person data needed to make the obligations check"""
+    """Holds the person data needed to make the obligations check."""
 
     def __init__(self, person_egn: str, driving_license_number: str) -> None:
         self.person_egn = person_egn
@@ -35,7 +35,7 @@ class KatPersonDetails:
 
 
 class KatObligationsDetails:
-    """The response object"""
+    """The response object."""
 
     def __init__(self, hasObligations: bool) -> None:
         self.hasObligations = hasObligations
@@ -43,7 +43,7 @@ class KatObligationsDetails:
 
 def has_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
     """
-    Description
+    Description.
 
     :param person_egn: EGN of the person
     :param driving_license_number: Driver License Number
