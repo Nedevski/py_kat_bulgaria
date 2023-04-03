@@ -1,4 +1,4 @@
-from py_kat_bulgaria import obligations
+import kat_bulgaria
 
 
 def test_has_obligations():

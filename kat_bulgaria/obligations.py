@@ -56,7 +56,8 @@ def has_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
         headers = {
             "content-type": "application/json",
         }
-        res = get(url, headers=headers, timeout=10, verify=True)
+
+        res = get(url, headers=headers, timeout=10, verify=False)
         print(url)
 
     except HTTPError as ex:

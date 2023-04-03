@@ -1,0 +1,1 @@
+Library to check for obligations to KAT Bulgaria programatically.
