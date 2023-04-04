@@ -1,10 +1,11 @@
+## Summary
+
 [![PyPI Link](https://img.shields.io/pypi/v/kat_bulgaria?style=flat-square)](https://pypi.org/project/kat-bulgaria/)
 ![PyPI License](https://img.shields.io/github/last-commit/nedevski/py_kat_bulgaria?style=flat-square)
 ![PyPI License](https://img.shields.io/pypi/l/kat_bulgaria?style=flat-square)
 ![PyPI Downloads](https://img.shields.io/pypi/dm/kat_bulgaria?style=flat-square)
 ![Code size](https://img.shields.io/github/languages/code-size/nedevski/py_kat_bulgaria?style=flat-square)
 
-## Summary
 This is a python library to check for obligations to KAT Bulgaria programatically.
 
 It does **NOT** save or log your data anywhere and it works with a single HTTPS request.
