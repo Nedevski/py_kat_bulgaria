@@ -19,4 +19,4 @@ One-liner:
 ___
 
 If pip does not see the latest version of the package:
-```pip3 install kat_bulgaria --upgrade```
+```pip3 uninstall kat_bulgaria -y && pip3 install kat_bulgaria --upgrade```

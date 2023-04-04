@@ -1,3 +1,5 @@
+"""Obligations module"""
+
 import ssl
 import json
 import urllib.request as req
@@ -42,8 +44,8 @@ class KatPersonDetails:
 class KatObligationsDetails:
     """The obligations response object."""
 
-    def __init__(self, hasObligations: bool) -> None:
-        self.hasObligations = hasObligations
+    def __init__(self, has_obligations: bool) -> None:
+        self.has_obligations = has_obligations
 
 
 class KatError(Exception):
@@ -53,7 +55,7 @@ class KatError(Exception):
         super().__init__(*args)
 
 
-def has_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
+def check_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
     """
     Calls the public URL to check if an user has any obligations.
 
@@ -72,14 +74,12 @@ def has_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
         if logger is not None:
             logger.debug("KAT Url called: %s", url)
 
-        cafilePath = "{path}/cert/chain_2024_03_19.pem".format(
-            path=Path(__file__).parent
-        )
+        cafile_path = f"{Path(__file__).parent}/cert/chain_2024_03_19.pem"
 
         resp = req.urlopen(
             url=Request(url, headers=headers),
             timeout=10,
-            context=ssl.create_default_context(cafile=cafilePath),
+            context=ssl.create_default_context(cafile=cafile_path),
         )
 
         data = json.loads(resp.read().decode())
@@ -87,14 +87,16 @@ def has_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
     except HTTPError as ex:
         if logger is not None:
             logger.warning("KAT Bulgaria HTTP call failed: %e", str(ex))
-        raise KatError("KAT website returned 400.")
+
+        raise KatError("KAT website returned 400.") from ex
 
     except TimeoutError as ex:
         if logger is not None:
             logger.info("KAT Bulgaria HTTP call TIMEOUT: %e", str(ex))
-        raise KatError("KAT website took too long to respond.")
+
+        raise KatError("KAT website took too long to respond.") from ex
 
     if "hasNonHandedSlip" not in data:
         raise KatError("KAT Bulgaria returned a malformed response")
 
-    return data["hasNonHandedSlip"]
+    return KatObligationsDetails(data["hasNonHandedSlip"])
