@@ -5,6 +5,7 @@ from urllib.request import Request, HTTPError
 
 import re
 from logging import Logger
+from pathlib import Path
 
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
@@ -71,16 +72,17 @@ def has_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
         if logger is not None:
             logger.debug("KAT Url called: %s", url)
 
+        cafilePath = "{path}/cert/chain_2024_03_19.pem".format(
+            path=Path(__file__).parent
+        )
+
         resp = req.urlopen(
             url=Request(url, headers=headers),
             timeout=10,
-            context=ssl.create_default_context(
-                cafile="kat_bulgaria/cert/chain_2024_03_19.pem"
-            ),
+            context=ssl.create_default_context(cafile=cafilePath),
         )
 
         data = json.loads(resp.read().decode())
-        print(data)
 
     except HTTPError as ex:
         if logger is not None:
