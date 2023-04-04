@@ -90,7 +90,10 @@ def check_obligations(
         if logger is not None:
             logger.warning("KAT Bulgaria HTTP call failed: %e", str(ex))
 
-        raise KatError("KAT website returned 400.") from ex
+        # TODO: Validate for code=GL_00038_E
+        # TODO: Validate for code=GL_UNDELIVERED_AND_UNPAID_DEBTS_E
+
+        raise KatError(f"KAT website returned an error: {str(ex)}") from ex
 
     except TimeoutError as ex:
         if logger is not None:
