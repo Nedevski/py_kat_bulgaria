@@ -1,8 +1,6 @@
 """Obligations module"""
 
 import re
-from logging import Logger
-
 from requests import HTTPError, ReadTimeout, ConnectTimeout, get
 
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
