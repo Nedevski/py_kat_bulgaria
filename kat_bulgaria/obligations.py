@@ -55,7 +55,9 @@ class KatError(Exception):
         super().__init__(*args)
 
 
-def check_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
+def check_obligations(
+    person: KatPersonDetails, logger: Logger = None
+) -> KatObligationsDetails:
     """
     Calls the public URL to check if an user has any obligations.
 

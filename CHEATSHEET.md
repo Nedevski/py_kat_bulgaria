@@ -18,5 +18,5 @@ One-liner:
 ```python3 setup.py bdist_wheel && twine upload dist/*```
 ___
 
-If pip does not see the latest version of the package:
+If pip does not see the latest version of the package (run twice)
 ```pip3 uninstall kat_bulgaria -y && pip3 install kat_bulgaria --upgrade```
