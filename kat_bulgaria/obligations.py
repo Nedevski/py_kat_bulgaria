@@ -3,7 +3,7 @@
 import re
 from logging import Logger
 
-from requests import HTTPError, get
+from requests import HTTPError, ReadTimeout, ConnectTimeout, get
 
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
@@ -51,8 +51,15 @@ class KatError(Exception):
         super().__init__(*args)
 
 
+class KatFatalError(Exception):
+    """Fatal error wrapper"""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 def check_obligations(
-    person: KatPersonDetails, logger: Logger = None
+    person: KatPersonDetails, request_timeout: int = 10
 ) -> KatObligationsDetails | None:
     """
     Calls the public URL to check if an user has any obligations.
@@ -69,10 +76,7 @@ def check_obligations(
             "content-type": "application/json",
         }
 
-        if logger is not None:
-            logger.debug("KAT Url called: %s", url)
-
-        resp = get(url, headers=headers, timeout=10)
+        resp = get(url, headers=headers, timeout=request_timeout)
         data = resp.json()
 
     except HTTPError as ex:
@@ -80,43 +84,29 @@ def check_obligations(
             # code = GL_00038_E
             # Invalid user data => Throw error
             if data["code"] == "GL_00038_E":
-                if logger is not None:
-                    logger.warn("KAT Bulgaria HTTP call failed: %e", str(ex))
-
                 raise ValueError(
-                    f"EGN or Driving License Number was not valid: {str(ex)}"
+                    f"KAT_BG: EGN or Driving License Number was not valid: {str(ex)}"
                 ) from ex
 
             # code = GL_UNDELIVERED_AND_UNPAID_DEBTS_E
-            # This means the KAT website died for a bit => Log error, return None
+            # This means the KAT website died for a bit
             if data["code"] == "GL_00038_E":
-                if logger is not None:
-                    logger.info("KAT Bulgaria HTTP call failed: %e", str(ex))
-
-                return None
+                raise KatError("KAT_BG: Website is down temporarily. :(") from ex
 
         else:
-            # If there is no "code" and the response is 400, treat as unhandled
-            if logger is not None:
-                logger.warning("KAT Bulgaria HTTP call failed: %e", str(ex))
+            # If the response is 400 and there is no "code", probably they changed the schema
+            raise KatFatalError(
+                f"KAT_BG: Website returned an unknown error: {str(ex)}"
+            ) from ex
 
-            raise KatError(f"KAT website returned an error: {str(ex)}") from ex
-
-    except TimeoutError as ex:
-        # The requests timeout from time to time, that's fine => return None
-        if logger is not None:
-            logger.info("KAT Bulgaria HTTP call TIMEOUT: %e", str(ex))
-
-        return None
+    except (TimeoutError, ReadTimeout, ConnectTimeout) as ex:
+        # The requests timeout from time to time, don't worry about it
+        raise KatError(
+            f"KAT_BG: Request timed out for {person.driving_license_number}"
+        ) from ex
 
     if "hasNonHandedSlip" not in data:
         # This should never happen. If we go in this if, this probably means they changed their schema
-        if logger is not None:
-            logger.error(f"KAT Bulgaria returned a malformed response: {data}")
-
-        raise KatError(f"KAT Bulgaria returned a malformed response: {data}")
-
-    if logger is not None:
-        logger.debug("KAT info retrieved: %e", str(ex))
+        raise KatFatalError(f"KAT_BG: Website returned a malformed response: {data}")
 
     return KatObligationsDetails(data["hasNonHandedSlip"])
