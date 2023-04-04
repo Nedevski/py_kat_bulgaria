@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="kat_bulgaria",
-    version="0.0.3",
+    version="0.0.4",
     description="A library to check for existing obligations to KAT Bulgaria",
     url="https://github.com/Nedevski/py_kat_bulgaria",
     author="Nikola Nedevski",
@@ -13,4 +13,5 @@ setup(
     setup_requires=["pytest-runner"],
     tests_require=["pytest==4.4.1"],
     test_suite="tests",
+    package_data={"": ["*.pem", "**/*.pem", "*.crt", "**/*.crt", "*.cer", "**/*.cer"]},
 )
