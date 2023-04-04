@@ -1,6 +1,10 @@
-from requests import HTTPError, get
-from logging import Logger
+import ssl
+import json
+import urllib.request as req
+from urllib.request import Request, HTTPError
+
 import re
+from logging import Logger
 
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
@@ -35,15 +39,22 @@ class KatPersonDetails:
 
 
 class KatObligationsDetails:
-    """The response object."""
+    """The obligations response object."""
 
     def __init__(self, hasObligations: bool) -> None:
         self.hasObligations = hasObligations
 
 
+class KatError(Exception):
+    """Error wrapper"""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 def has_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
     """
-    Description.
+    Calls the public URL to check if an user has any obligations.
 
     :param person_egn: EGN of the person
     :param driving_license_number: Driver License Number
@@ -57,16 +68,31 @@ def has_obligations(person: KatPersonDetails, logger: Logger = None) -> bool:
             "content-type": "application/json",
         }
 
-        res = get(url, headers=headers, timeout=10, verify=False)
-        print(url)
+        if logger is not None:
+            logger.debug("KAT Url called: %s", url)
+
+        resp = req.urlopen(
+            url=Request(url, headers=headers),
+            timeout=10,
+            context=ssl.create_default_context(
+                cafile="kat_bulgaria/cert/chain_2024_03_19.pem"
+            ),
+        )
+
+        data = json.loads(resp.read().decode())
+        print(data)
 
     except HTTPError as ex:
         if logger is not None:
             logger.warning("KAT Bulgaria HTTP call failed: %e", str(ex))
-        return None
+        raise KatError("KAT website returned 400.")
+
     except TimeoutError as ex:
         if logger is not None:
             logger.info("KAT Bulgaria HTTP call TIMEOUT: %e", str(ex))
-        return None
+        raise KatError("KAT website took too long to respond.")
 
-    return res.json()["hasNonHandedSlip"]
+    if "hasNonHandedSlip" not in data:
+        raise KatError("KAT Bulgaria returned a malformed response")
+
+    return data["hasNonHandedSlip"]
