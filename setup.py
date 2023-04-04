@@ -3,12 +3,11 @@
 from pathlib import Path
 from setuptools import find_packages, setup
 
-this_dir = Path(__file__).parent
-long_description = (this_dir / "README.md").read_text()
+long_description = Path("README.md").read_text()
 
 setup(
     name="kat_bulgaria",
-    version="0.0.8",
+    version="0.0.8.1",
     description="A library to check for existing obligations to KAT Bulgaria",
     long_description=long_description,
     long_description_content_type="text/markdown",
