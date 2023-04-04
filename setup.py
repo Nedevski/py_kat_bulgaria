@@ -1,8 +1,10 @@
+"""Setup"""
+
 from setuptools import find_packages, setup
 
 setup(
     name="kat_bulgaria",
-    version="0.0.6",
+    version="0.0.7",
     description="A library to check for existing obligations to KAT Bulgaria",
     url="https://github.com/Nedevski/py_kat_bulgaria",
     author="Nikola Nedevski",
