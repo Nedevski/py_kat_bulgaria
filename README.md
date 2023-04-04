@@ -10,6 +10,12 @@ This is a python library to check for obligations to KAT Bulgaria programaticall
 
 It does **NOT** save or log your data anywhere and it works with a single HTTPS request.
 
+## Installation
+
+```shell
+pip install kat_bulgaria
+```
+
 ## Usage:
 ```python
 from kat_bulgaria.obligations import KatError, KatPersonDetails, check_obligations
