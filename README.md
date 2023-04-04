@@ -37,7 +37,7 @@ has_obligations = response.has_obligations
 print(f"Has obligations: {has_obligations}")
 ```
 
-## Known API responses:
+## Known raw API responses (debug info):
 
 
 ```python
@@ -46,6 +46,9 @@ print(f"Has obligations: {has_obligations}")
 
 # One or more fines/obligations, which have not been served
 {"obligations":[],"hasNonHandedSlip":true}
+
+# One or more fines/obligations, which *have* been served
+### MISSING
 
 # Invalid EGN or Driver License Number:
 {"code":"GL_00038_E","message":"Няма данни за посоченото СУМПС/ЕГН или не се намира съответствие за издадено СУМПС на лице с посочения ЕГН/ЛНЧ"}
@@ -59,13 +62,3 @@ print(f"Has obligations: {has_obligations}")
 # Господине, не виждате ли че сме в обедна почивка???
 # At this point it's out of your hands
 ```
-
-## Certificate Issues (as of 2023-04-04)
-
-At the time of writing, the certificate for [e-uslugi.mvr.bg](e-uslugi.mvr.bg) is not configured to serve the intermediate certificate correctly. Because of that the SSL verification fails for all web requests.
-
-This means that the only way for the request to be successful is to save the full certificate chain for the certificate and save it locally (located in `~/kat_bulgaria/cert`).
-
-When they change their certificate (valid until March 2024) this package will break. The fix is to simply replace the chain certificate with the up-to-date one and update the filename in `~/kat_bulgaria/obligations.py` accordingly.
-
-If I miss that expiry date, feel free to open an issue or a PR with a fix.

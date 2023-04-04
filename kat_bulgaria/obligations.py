@@ -1,18 +1,14 @@
 """Obligations module"""
 
-import ssl
-import json
-import urllib.request as req
-from urllib.request import Request, HTTPError
-
 import re
 from logging import Logger
-from pathlib import Path
+
+from requests import HTTPError, get
 
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
 
-KAT_OBLIGATIONS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?mode=1&obligedPersonIdent={egn}&drivingLicenceNumber={license_number}"
+_KAT_OBLIGATIONS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?mode=1&obligedPersonIdent={egn}&drivingLicenceNumber={license_number}"
 
 
 class KatPersonDetails:
@@ -57,7 +53,7 @@ class KatError(Exception):
 
 def check_obligations(
     person: KatPersonDetails, logger: Logger = None
-) -> KatObligationsDetails:
+) -> KatObligationsDetails | None:
     """
     Calls the public URL to check if an user has any obligations.
 
@@ -66,7 +62,7 @@ def check_obligations(
 
     """
     try:
-        url = KAT_OBLIGATIONS_URL.format(
+        url = _KAT_OBLIGATIONS_URL.format(
             egn=person.person_egn, license_number=person.driving_license_number
         )
         headers = {
@@ -76,32 +72,51 @@ def check_obligations(
         if logger is not None:
             logger.debug("KAT Url called: %s", url)
 
-        cafile_path = f"{Path(__file__).parent}/cert/chain_2024_03_19.pem"
-
-        resp = req.urlopen(
-            url=Request(url, headers=headers),
-            timeout=10,
-            context=ssl.create_default_context(cafile=cafile_path),
-        )
-
-        data = json.loads(resp.read().decode())
+        resp = get(url, headers=headers, timeout=10)
+        data = resp.json()
 
     except HTTPError as ex:
-        if logger is not None:
-            logger.warning("KAT Bulgaria HTTP call failed: %e", str(ex))
+        if "code" in data:
+            # code = GL_00038_E
+            # Invalid user data => Throw error
+            if data["code"] == "GL_00038_E":
+                if logger is not None:
+                    logger.warn("KAT Bulgaria HTTP call failed: %e", str(ex))
 
-        # TODO: Validate for code=GL_00038_E
-        # TODO: Validate for code=GL_UNDELIVERED_AND_UNPAID_DEBTS_E
+                raise ValueError(
+                    f"EGN or Driving License Number was not valid: {str(ex)}"
+                ) from ex
 
-        raise KatError(f"KAT website returned an error: {str(ex)}") from ex
+            # code = GL_UNDELIVERED_AND_UNPAID_DEBTS_E
+            # This means the KAT website died for a bit => Log error, return None
+            if data["code"] == "GL_00038_E":
+                if logger is not None:
+                    logger.info("KAT Bulgaria HTTP call failed: %e", str(ex))
+
+                return None
+
+        else:
+            # If there is no "code" and the response is 400, treat as unhandled
+            if logger is not None:
+                logger.warning("KAT Bulgaria HTTP call failed: %e", str(ex))
+
+            raise KatError(f"KAT website returned an error: {str(ex)}") from ex
 
     except TimeoutError as ex:
+        # The requests timeout from time to time, that's fine => return None
         if logger is not None:
             logger.info("KAT Bulgaria HTTP call TIMEOUT: %e", str(ex))
 
-        raise KatError("KAT website took too long to respond.") from ex
+        return None
 
     if "hasNonHandedSlip" not in data:
-        raise KatError("KAT Bulgaria returned a malformed response")
+        # This should never happen. If we go in this if, this probably means they changed their schema
+        if logger is not None:
+            logger.error(f"KAT Bulgaria returned a malformed response: {data}")
+
+        raise KatError(f"KAT Bulgaria returned a malformed response: {data}")
+
+    if logger is not None:
+        logger.debug("KAT info retrieved: %e", str(ex))
 
     return KatObligationsDetails(data["hasNonHandedSlip"])
