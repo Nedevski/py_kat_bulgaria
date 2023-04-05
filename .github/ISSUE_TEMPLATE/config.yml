@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report an issue, which is not related to Home Assistant
+    url: https://github.com/Nedevski/py_kat_bulgaria/issues/new
+    about: If you use this library standalone, please open an issue here
+  - name: Report a bug with the "KAT Bulgaria" Home Assistant integration
+    url: https://github.com/home-assistant/core/issues
+    about: If you have a problem with the "KAT Bulgaria" integration in Home Assistant, please report issues in the Home Assistant core repository unless a developer told you otherwise.
