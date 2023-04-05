@@ -29,15 +29,18 @@ person = KatPersonDetails(egn, driver_license_number)
 
 try:
     response = check_obligations(person)
+
 except ValueError as err:
     # Validation error, such as invalid EGN or Driver License Number
     print(f"Error: {str(err)}")
     return
+
 except KatError as err:
     # Standard error, means the KAT website is down or too slow to respond.
     # If you get this, just try again in a bit.
     print(f"Error: {str(err)}")
     return
+    
 except KatFatalError as err:
     # Fatal error, this means the KAT website returned an unexpected response.
     # If you get this error this means the website was probably updated and this library
