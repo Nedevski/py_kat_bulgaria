@@ -1,45 +1,61 @@
 """Obligations module"""
 
+from dataclasses import dataclass
 import re
-from requests import HTTPError, ReadTimeout, ConnectTimeout, get
+import httpx
+
+
+_REQUEST_TIMEOUT = 5
+_KAT_OBLIGATIONS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?mode=1&obligedPersonIdent={egn}&drivingLicenceNumber={license_number}"
+
+_RESP_HAS_NON_HANDED_SLIP = "hasNonHandedSlip"
+_RESP_OBLIGATIONS = "obligations"
 
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
 
-_KAT_OBLIGATIONS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?mode=1&obligedPersonIdent={egn}&drivingLicenceNumber={license_number}"
 
-
-class KatPersonDetails:
-    """Holds the person data needed to make the obligations check."""
-
-    def __init__(self, person_egn: str, driving_license_number: str) -> None:
-        self.person_egn = person_egn
-        self.driving_license_number = driving_license_number
-        self.__validate()
-
-    def __validate(self):
-        if self.person_egn is None:
-            raise ValueError("EGN Missing")
-        else:
-            egn_match = re.search(REGEX_EGN, self.person_egn)
-            if egn_match is None:
-                raise ValueError("EGN is not valid")
-
-        if self.driving_license_number is None:
-            raise ValueError("Driving License Number missing")
-        else:
-            license_match = re.search(
-                REGEX_DRIVING_LICENSE, self.driving_license_number
-            )
-            if license_match is None:
-                raise ValueError("Driving License Number not valid")
-
-
-class KatObligationsDetails:
+@dataclass
+class KatObligationsSimpleResponse:
     """The obligations response object."""
 
-    def __init__(self, has_obligations: bool) -> None:
-        self.has_obligations = has_obligations
+    def __init__(self, data: any) -> None:
+        self.has_obligations = (
+            data[_RESP_HAS_NON_HANDED_SLIP] or len(data[_RESP_OBLIGATIONS]) > 0
+        )
+
+
+@dataclass
+class KatObligationsResponse:
+    """The obligations response object."""
+
+    has_non_handed_slip: bool
+    has_obligations: bool
+    obligations: any
+
+    def __init__(self, data: any) -> None:
+        self.obligations = []
+        self.has_non_handed_slip = data[_RESP_HAS_NON_HANDED_SLIP]
+        self.has_obligations = (
+            data[_RESP_HAS_NON_HANDED_SLIP] or len(data[_RESP_OBLIGATIONS]) > 0
+        )
+
+        if len(data[_RESP_OBLIGATIONS]) > 0:
+            for obligation in data[_RESP_OBLIGATIONS]:
+                self.obligations.append(
+                    {
+                        "amount": obligation["amount"],
+                        "description": obligation["paymentReason"],
+                        "documentNumber": obligation["additionalData"][
+                            "documentNumber"
+                        ],
+                        "date_created": obligation["additionalData"]["fishCreateDate"],
+                        "date_served": obligation["obligationDate"],
+                        "person_name": obligation["obligedPersonName"],
+                        "person_identifier": obligation["obligedPersonIdent"],
+                        "discount": obligation["additionalData"]["discount"],
+                    }
+                )
 
 
 class KatError(Exception):
@@ -56,9 +72,54 @@ class KatFatalError(Exception):
         super().__init__(*args)
 
 
-def check_obligations(
-    person: KatPersonDetails, request_timeout: int = 10
-) -> KatObligationsDetails | None:
+async def async_verify_credentials(egn: str, license_number: str) -> bool:
+    """Confirm that the credentials are correct."""
+    if egn is None:
+        raise ValueError("EGN Missing")
+    else:
+        egn_match = re.search(REGEX_EGN, egn)
+        if egn_match is None:
+            raise ValueError("EGN is not valid")
+
+    if license_number is None:
+        raise ValueError("Driving License Number missing")
+    else:
+        license_match = re.search(REGEX_DRIVING_LICENSE, license_number)
+        if license_match is None:
+            raise ValueError("Driving License Number not valid")
+
+    try:
+        url = _KAT_OBLIGATIONS_URL.format(egn=egn, license_number=license_number)
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=_REQUEST_TIMEOUT)
+            resp.raise_for_status()
+
+    except httpx.HTTPError:
+        return False
+
+    return True
+
+
+async def async_check_obligations(egn: str, license_number: str) -> bool:
+    """Check if the person has obligations"""
+
+    data = await _get_obligations_request(egn, license_number)
+
+    return KatObligationsSimpleResponse(data).has_obligations
+
+
+async def async_get_obligations(
+    egn: str, license_number: str
+) -> KatObligationsResponse:
+    """Get all obligations"""
+
+    data = await _get_obligations_request(egn, license_number)
+
+    return KatObligationsResponse(data)
+
+
+async def _get_obligations_request(egn: str, license_number: str) -> any:
     """
     Calls the public URL to check if an user has any obligations.
 
@@ -66,18 +127,22 @@ def check_obligations(
     :param driving_license_number: Driver License Number
 
     """
-    try:
-        url = _KAT_OBLIGATIONS_URL.format(
-            egn=person.person_egn, license_number=person.driving_license_number
-        )
-        headers = {
-            "content-type": "application/json",
-        }
+    data = {}
 
-        resp = get(url, headers=headers, timeout=request_timeout)
+    try:
+        url = _KAT_OBLIGATIONS_URL.format(egn=egn, license_number=license_number)
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=_REQUEST_TIMEOUT)
+            resp.raise_for_status()
+
         data = resp.json()
 
-    except HTTPError as ex:
+    except httpx.TimeoutException as ex:
+        # The requests timeout from time to time, don't worry about it
+        raise KatError(f"KAT_BG: Request timed out for {license_number}") from ex
+
+    except httpx.HTTPError as ex:
         if "code" in data:
             # code = GL_00038_E
             # Invalid user data => Throw error
@@ -97,14 +162,8 @@ def check_obligations(
                 f"KAT_BG: Website returned an unknown error: {str(ex)}"
             ) from ex
 
-    except (TimeoutError, ReadTimeout, ConnectTimeout) as ex:
-        # The requests timeout from time to time, don't worry about it
-        raise KatError(
-            f"KAT_BG: Request timed out for {person.driving_license_number}"
-        ) from ex
-
-    if "hasNonHandedSlip" not in data:
+    if _RESP_HAS_NON_HANDED_SLIP not in data or _RESP_OBLIGATIONS not in data:
         # This should never happen. If we go in this if, this probably means they changed their schema
         raise KatFatalError(f"KAT_BG: Website returned a malformed response: {data}")
 
-    return KatObligationsDetails(data["hasNonHandedSlip"])
+    return data

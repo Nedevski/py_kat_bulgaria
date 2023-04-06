@@ -16,40 +16,57 @@ It does **NOT** save or log your data anywhere and it works with a single HTTPS 
 pip install kat_bulgaria
 ```
 
-## Usage:
+## Example:
 ```python
-from kat_bulgaria.obligations import KatError, KatPersonDetails, check_obligations
+import asyncio
+from dataclasses import asdict
+from kat_bulgaria.obligations import (
+    KatError,
+    KatFatalError,
+    async_verify_credentials,
+    async_check_obligations,
+    async_get_obligations,
+)
 
-egn = "0011223344"
-driver_license_number = "123456789"
+EGN = "0011223344"
+LICENSE_NUMBER = "123456789"
 
-# Validates EGN and Driver License Number internally
-# Throws ValueError on invalid input
-person = KatPersonDetails(egn, driver_license_number)
 
-try:
-    response = check_obligations(person)
+def example_func() -> None:
+    try:
+        # Validates EGN and Driver License Number locally and with the API
+        is_valid = asyncio.run(async_verify_credentials(EGN, LICENSE_NUMBER))
 
-except ValueError as err:
-    # Validation error, such as invalid EGN or Driver License Number
-    print(f"Error: {str(err)}")
-    return
+        # Checks if a person has obligations, returns true or false
+        has_obligations = asyncio.run(async_check_obligations(EGN, LICENSE_NUMBER))
 
-except KatError as err:
-    # Standard error, means the KAT website is down or too slow to respond.
-    # If you get this, just try again in a bit.
-    print(f"Error: {str(err)}")
-    return
-    
-except KatFatalError as err:
-    # Fatal error, this means the KAT website returned an unexpected response.
-    # If you get this error this means the website was probably updated and this library
-    # needs to reflect that change. Please open a new issue so it can be fixed.
-    print(f"Error: {str(err)}")
-    return
+        # Returns an object with additinal data (if any)
+        obligations = asyncio.run(async_get_obligations(EGN, LICENSE_NUMBER))
 
-has_obligations = response.has_obligations
-print(f"Has obligations: {has_obligations}")
+    except ValueError as err:
+        # Validation error, such as invalid EGN or Driver License Number
+        print(f"Error: {str(err)}")
+        return
+
+    except KatError as err:
+        # Standard error, means the KAT website is down or too slow to respond.
+        # If you get this, just try again in a bit.
+        print(f"Error: {str(err)}")
+        return
+
+    except KatFatalError as err:
+        # Fatal error, this means the KAT website returned an unexpected response.
+        # If you get this error this means the website was probably updated and this library
+        # needs to reflect that change. Please open a new issue so it can be fixed.
+        print(f"Error: {str(err)}")
+        return
+
+    print(f"is_valid = {is_valid}")
+    print(f"has_obligations = {has_obligations}")
+    print(f"obligations = {asdict(obligations)}")
+
+
+example_func()
 ```
 
 ## Known raw API responses (debug info):
@@ -63,7 +80,38 @@ print(f"Has obligations: {has_obligations}")
 {"obligations":[],"hasNonHandedSlip":true}
 
 # One or more fines/obligations, which *have* been served
-### MISSING
+{
+    "obligations": [
+        {
+            "status": 0,
+            "amount": 100,
+            "discountAmount": 80,
+            "bic": "UBBSBGSF",
+            "iban": "BG22UBBS88883122944101",
+            "paymentReason": "НП 22-1085-002609 14.10.2022",
+            "pepCin": "",
+            "expirationDate": "2023-04-06T23:59:59",
+            "obligedPersonName": "ИМЕ ПРЕЗИМЕ ФАМИЛИЯ",
+            "obligedPersonIdent": "1234567890",
+            "obligedPersonIdentType": 1,
+            "obligationDate": "2023-04-06T00:00:00",
+            "obligationIdentifier": "PENAL_DECREE||22-1085-002609|100",
+            "type": 2,
+            "serviceID": 349,
+            "additionalData": {
+                "isServed": "True",
+                "discount": "20",
+                "isMainDocument": "False",
+                "documentType": "PENAL_DECREE",
+                "documentSeries": null,
+                "documentNumber": "22-1085-002609",
+                "amount": "100",
+                "fishCreateDate": "2022-10-14"
+            }
+        }
+    ],
+    "hasNonHandedSlip": false
+}
 
 # Invalid EGN or Driver License Number:
 {"code":"GL_00038_E","message":"Няма данни за посоченото СУМПС/ЕГН или не се намира съответствие за издадено СУМПС на лице с посочения ЕГН/ЛНЧ"}
