@@ -1,5 +1,6 @@
 """Obligations module"""
 
+from dataclasses import dataclass
 import re
 import httpx
 
@@ -14,6 +15,7 @@ REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
 
 
+@dataclass
 class KatObligationsSimpleResponse:
     """The obligations response object."""
 
@@ -23,8 +25,13 @@ class KatObligationsSimpleResponse:
         )
 
 
+@dataclass
 class KatObligationsResponse:
     """The obligations response object."""
+
+    has_non_handed_slip: bool
+    has_obligations: bool
+    obligations: any
 
     def __init__(self, data: any) -> None:
         self.obligations = []
@@ -94,14 +101,12 @@ async def async_verify_credentials(egn: str, license_number: str) -> bool:
     return True
 
 
-async def async_check_obligations(
-    egn: str, license_number: str
-) -> KatObligationsResponse:
+async def async_check_obligations(egn: str, license_number: str) -> bool:
     """Check if the person has obligations"""
 
     data = await _get_obligations_request(egn, license_number)
 
-    return KatObligationsSimpleResponse(data)
+    return KatObligationsSimpleResponse(data).has_obligations
 
 
 async def async_get_obligations(
