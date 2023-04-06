@@ -1,0 +1,32 @@
+{
+    "obligations": [
+        {
+            "status": 0,
+            "amount": 100,
+            "discountAmount": 80,
+            "bic": "UBBSBGSF",
+            "iban": "BG22UBBS88883122944101",
+            "paymentReason": "НП 22-1085-002609 14.10.2022",
+            "pepCin": "",
+            "expirationDate": "2023-04-06T23:59:59",
+            "obligedPersonName": "ИМЕ ПРЕЗИМЕ ФАМИЛИЯ",
+            "obligedPersonIdent": "1234567890",
+            "obligedPersonIdentType": 1,
+            "obligationDate": "2023-04-06T00:00:00",
+            "obligationIdentifier": "PENAL_DECREE||22-1085-002609|100",
+            "type": 2,
+            "serviceID": 349,
+            "additionalData": {
+                "isServed": "True",
+                "discount": "20",
+                "isMainDocument": "False",
+                "documentType": "PENAL_DECREE",
+                "documentSeries": null,
+                "documentNumber": "22-1085-002609",
+                "amount": "100",
+                "fishCreateDate": "2022-10-14"
+            }
+        }
+    ],
+    "hasNonHandedSlip": false
+}
