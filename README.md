@@ -23,25 +23,28 @@ from dataclasses import asdict
 from kat_bulgaria.obligations import (
     KatError,
     KatFatalError,
-    async_verify_credentials,
-    async_check_obligations,
-    async_get_obligations,
+    KatApi,
 )
 
 EGN = "0011223344"
 LICENSE_NUMBER = "123456789"
 
 
-def example_func() -> None:
+def example_code():
+    api = KatApi()
+
     try:
         # Validates EGN and Driver License Number locally and with the API
-        is_valid = asyncio.run(async_verify_credentials(EGN, LICENSE_NUMBER))
+        is_valid = asyncio.run(api.async_verify_credentials(EGN, LICENSE_NUMBER))
+        print(is_valid)
 
         # Checks if a person has obligations, returns true or false
-        has_obligations = asyncio.run(async_check_obligations(EGN, LICENSE_NUMBER))
+        has_obligations = asyncio.run(api.async_check_obligations(EGN, LICENSE_NUMBER))
+        print(has_obligations)
 
         # Returns an object with additinal data (if any)
-        obligations = asyncio.run(async_get_obligations(EGN, LICENSE_NUMBER))
+        obligations = asyncio.run(api.async_get_obligations(EGN, LICENSE_NUMBER))
+        print(obligations)
 
     except ValueError as err:
         # Validation error, such as invalid EGN or Driver License Number
@@ -61,12 +64,9 @@ def example_func() -> None:
         print(f"Error: {str(err)}")
         return
 
-    print(f"is_valid = {is_valid}")
-    print(f"has_obligations = {has_obligations}")
-    print(f"obligations = {asdict(obligations)}")
 
+example_code()
 
-example_func()
 ```
 
 ## Known raw API responses (debug info):

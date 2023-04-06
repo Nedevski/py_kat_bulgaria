@@ -1,1 +1,1 @@
-"""KAT Bulgaria module"""
+"""KAT Bulgaria"""
