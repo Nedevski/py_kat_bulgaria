@@ -22,7 +22,6 @@ import asyncio
 from dataclasses import asdict
 from kat_bulgaria.obligations import (
     KatError,
-    KatFatalError,
     KatApi,
 )
 
@@ -31,36 +30,27 @@ LICENSE_NUMBER = "123456789"
 
 
 def example_code():
+    """Example Code"""
+    
     api = KatApi()
 
     try:
         # Validates EGN and Driver License Number locally and with the API
-        is_valid = asyncio.run(api.async_verify_credentials(EGN, LICENSE_NUMBER))
-        print(is_valid)
+        verify = asyncio.run(api.async_verify_credentials(EGN, LICENSE_NUMBER))
+        print(f"Valid: {verify.data}")
 
         # Checks if a person has obligations, returns true or false
         has_obligations = asyncio.run(api.async_check_obligations(EGN, LICENSE_NUMBER))
-        print(has_obligations)
+        print(f"HasObligations: {has_obligations.data}")
 
         # Returns an object with additinal data (if any)
         obligations = asyncio.run(api.async_get_obligations(EGN, LICENSE_NUMBER))
-        print(obligations)
-
-    except ValueError as err:
-        # Validation error, such as invalid EGN or Driver License Number
-        print(f"Error: {str(err)}")
-        return
+        print(f"Obligations details: {obligations.data}")
 
     except KatError as err:
-        # Standard error, means the KAT website is down or too slow to respond.
-        # If you get this, just try again in a bit.
-        print(f"Error: {str(err)}")
-        return
-
-    except KatFatalError as err:
-        # Fatal error, this means the KAT website returned an unexpected response.
-        # If you get this error this means the website was probably updated and this library
-        # needs to reflect that change. Please open a new issue so it can be fixed.
+        # Malformed response.
+        # If you get this probably KAT updated their website.
+        # Open an issue or contact me for fix.
         print(f"Error: {str(err)}")
         return
 

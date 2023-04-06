@@ -1,6 +1,8 @@
 """Obligations module"""
 
 from dataclasses import dataclass
+from typing import Generic, TypeVar
+
 import re
 import httpx
 
@@ -11,7 +13,8 @@ _KAT_OBLIGATIONS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?mode=1&oblig
 _RESP_HAS_NON_HANDED_SLIP = "hasNonHandedSlip"
 _RESP_OBLIGATIONS = "obligations"
 
-_ERR_PREFIX = "[KAT_API]"
+_ERR_PREFIX = "[KAT]"
+_ERR_PREFIX_API = "[KAT_API]"
 
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
@@ -60,15 +63,47 @@ class KatObligationsResponse:
                 )
 
 
+@dataclass
+class _WebResponse:
+    """Wrapper for the HTTP response"""
+
+    success: bool
+    error_message: str
+    raw_data: any
+
+    def __init__(self, raw_data: any, error_message: str = None):
+        self.raw_data = raw_data
+        self.error_message = error_message
+
+        if error_message is None:
+            self.success = True
+        else:
+            self.success = False
+
+
+T = TypeVar("T", KatObligationsResponse, KatObligationsSimpleResponse, bool)
+
+
+@dataclass
+class KatApiResponse(Generic[T]):
+    """Wrapper for different responses"""
+
+    success: bool
+    error_message: str
+    data: T
+
+    def __init__(self, data: T = None, error_message: str = None):
+        self.success = True
+
+        if error_message is not None:
+            self.success = False
+
+        self.data = data
+        self.error_message = error_message
+
+
 class KatError(Exception):
     """Error wrapper"""
-
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
-
-
-class KatFatalError(Exception):
-    """Fatal error wrapper"""
 
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
@@ -80,51 +115,59 @@ class KatApi:
     def __init__(self):
         """Constructor"""
 
-    async def async_verify_credentials(self, egn: str, license_number: str) -> bool:
+    async def async_verify_credentials(
+        self, egn: str, license_number: str
+    ) -> KatApiResponse[bool]:
         """Confirm that the credentials are correct."""
+
         if egn is None:
-            raise ValueError("EGN Missing")
+            return KatApiResponse(False, f"{_ERR_PREFIX} EGN Missing")
         else:
             egn_match = re.search(REGEX_EGN, egn)
             if egn_match is None:
-                raise ValueError("EGN is not valid")
+                return KatApiResponse(False, f"{_ERR_PREFIX} EGN is not valid")
 
         if license_number is None:
-            raise ValueError("Driving License Number missing")
+            return KatApiResponse(
+                False, f"{_ERR_PREFIX} Driving License Number missing"
+            )
         else:
             license_match = re.search(REGEX_DRIVING_LICENSE, license_number)
             if license_match is None:
-                raise ValueError("Driving License Number not valid")
+                return KatApiResponse(
+                    False, f"{_ERR_PREFIX} Driving License Number not valid"
+                )
 
-        try:
-            url = _KAT_OBLIGATIONS_URL.format(egn=egn, license_number=license_number)
+        res = await self.__get_obligations_request(egn, license_number)
 
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(url, timeout=_REQUEST_TIMEOUT)
-                resp.raise_for_status()
+        return KatApiResponse(res.success, res.error_message)
 
-        except httpx.HTTPError:
-            return False
-
-        return True
-
-    async def async_check_obligations(self, egn: str, license_number: str) -> bool:
+    async def async_check_obligations(
+        self, egn: str, license_number: str
+    ) -> KatApiResponse[bool]:
         """Check if the person has obligations"""
 
-        data = await self.__get_obligations_request(egn, license_number)
+        res = await self.__get_obligations_request(egn, license_number)
 
-        return KatObligationsSimpleResponse(data).has_obligations
+        if res.success:
+            has_obligations = KatObligationsSimpleResponse(res.raw_data).has_obligations
+            return KatApiResponse(has_obligations)
+        else:
+            return KatApiResponse(None, res.error_message)
 
     async def async_get_obligations(
         self, egn: str, license_number: str
-    ) -> KatObligationsResponse:
+    ) -> KatApiResponse[KatObligationsResponse]:
         """Get all obligations"""
 
-        data = await self.__get_obligations_request(egn, license_number)
+        res = await self.__get_obligations_request(egn, license_number)
+        data = KatObligationsResponse(res.raw_data)
 
-        return KatObligationsResponse(data)
+        return KatApiResponse(data)
 
-    async def __get_obligations_request(self, egn: str, license_number: str) -> any:
+    async def __get_obligations_request(
+        self, egn: str, license_number: str
+    ) -> _WebResponse:
         """
         Calls the public URL to check if an user has any obligations.
 
@@ -142,38 +185,38 @@ class KatApi:
                 data = resp.json()
                 resp.raise_for_status()
 
-        except httpx.TimeoutException as ex:
-            # The requests timeout from time to time, don't worry about it
-            raise KatError(
-                f"{_ERR_PREFIX} Request timed out for {license_number}"
-            ) from ex
+        except httpx.TimeoutException:
+            return _WebResponse(
+                None, f"{_ERR_PREFIX_API} Request timed out for {license_number}"
+            )
 
         except httpx.HTTPError as ex:
             if "code" in data:
                 # code = GL_00038_E
-                # Invalid user data => Throw error
+                # Invalid user data (EGN or License Number)
                 if data["code"] == "GL_00038_E":
-                    raise ValueError(
-                        f"{_ERR_PREFIX} EGN or Driving License Number was not valid."
-                    ) from ex
+                    return _WebResponse(
+                        data,
+                        f"{_ERR_PREFIX_API} EGN or Driving License Number was not valid",
+                    )
 
                 # code = GL_UNDELIVERED_AND_UNPAID_DEBTS_E
                 # This means the KAT website died for a bit
                 if data["code"] == "GL_00038_E":
-                    raise KatError(
-                        f"{_ERR_PREFIX} Website is down temporarily. :("
-                    ) from ex
+                    return _WebResponse(
+                        data, f"{_ERR_PREFIX_API} Website is down temporarily. :("
+                    )
 
             else:
                 # If the response is 400 and there is no "code", probably they changed the schema
-                raise KatFatalError(
-                    f"{_ERR_PREFIX} Website returned an unknown error: {str(ex)}"
+                raise KatError(
+                    f"{_ERR_PREFIX_API} Website returned an unknown error: {str(ex)}"
                 ) from ex
 
         if _RESP_HAS_NON_HANDED_SLIP not in data or _RESP_OBLIGATIONS not in data:
             # This should never happen. If we go in this if, this probably means they changed their schema
-            raise KatFatalError(
-                f"{_ERR_PREFIX} Website returned a malformed response: {data}"
+            raise KatError(
+                f"{_ERR_PREFIX_API} Website returned a malformed response: {data}"
             )
 
-        return data
+        return _WebResponse(data)
