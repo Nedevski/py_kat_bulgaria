@@ -99,7 +99,7 @@ async def async_check_obligations(
 ) -> KatObligationsResponse:
     """Check if the person has obligations"""
 
-    data = _get_obligations_request(egn, license_number)
+    data = await _get_obligations_request(egn, license_number)
 
     return KatObligationsSimpleResponse(data)
 
@@ -109,7 +109,7 @@ async def async_get_obligations(
 ) -> KatObligationsResponse:
     """Get all obligations"""
 
-    data = _get_obligations_request(egn, license_number)
+    data = await _get_obligations_request(egn, license_number)
 
     return KatObligationsResponse(data)
 
