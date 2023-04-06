@@ -1,6 +1,7 @@
 """Obligations module"""
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Generic, TypeVar
 
 import re
@@ -63,22 +64,40 @@ class KatObligationsResponse:
                 )
 
 
+class KatErrorType(Enum):
+    """Different KAT api error types"""
+
+    VALIDATION_ERROR = 1
+    API_UNAVAILABLE = 2
+    TIMEOUT = 3
+
+
 @dataclass
 class _WebResponse:
     """Wrapper for the HTTP response"""
 
-    success: bool
-    error_message: str
     raw_data: any
+    error_message: str
+    error_type: KatErrorType
+    success: bool
 
-    def __init__(self, raw_data: any, error_message: str = None):
+    def __init__(
+        self,
+        raw_data: any,
+        error_message: str = None,
+        error_type: KatErrorType = None,
+    ):
         self.raw_data = raw_data
         self.error_message = error_message
+        self.error_type = None
 
         if error_message is None:
             self.success = True
         else:
             self.success = False
+
+        if error_type is not None:
+            self.error_type: error_type
 
 
 T = TypeVar("T", KatObligationsResponse, KatObligationsSimpleResponse, bool)
@@ -90,9 +109,12 @@ class KatApiResponse(Generic[T]):
 
     success: bool
     error_message: str
+    error_type: KatErrorType
     data: T
 
-    def __init__(self, data: T = None, error_message: str = None):
+    def __init__(
+        self, data: T = None, error_message: str = None, error_type: KatErrorType = None
+    ):
         self.success = True
 
         if error_message is not None:
@@ -100,6 +122,7 @@ class KatApiResponse(Generic[T]):
 
         self.data = data
         self.error_message = error_message
+        self.error_type = error_type
 
 
 class KatError(Exception):
@@ -121,26 +144,38 @@ class KatApi:
         """Confirm that the credentials are correct."""
 
         if egn is None:
-            return KatApiResponse(False, f"{_ERR_PREFIX} EGN Missing")
+            return KatApiResponse(
+                False,
+                f"{_ERR_PREFIX} EGN is missing or emtpy",
+                KatErrorType.VALIDATION_ERROR,
+            )
         else:
             egn_match = re.search(REGEX_EGN, egn)
             if egn_match is None:
-                return KatApiResponse(False, f"{_ERR_PREFIX} EGN is not valid")
+                return KatApiResponse(
+                    False,
+                    f"{_ERR_PREFIX} EGN is not valid",
+                    KatErrorType.VALIDATION_ERROR,
+                )
 
         if license_number is None:
             return KatApiResponse(
-                False, f"{_ERR_PREFIX} Driving License Number missing"
+                False,
+                f"{_ERR_PREFIX} Driving License Number missing",
+                KatErrorType.VALIDATION_ERROR,
             )
         else:
             license_match = re.search(REGEX_DRIVING_LICENSE, license_number)
             if license_match is None:
                 return KatApiResponse(
-                    False, f"{_ERR_PREFIX} Driving License Number not valid"
+                    False,
+                    f"{_ERR_PREFIX} Driving License Number not valid",
+                    KatErrorType.VALIDATION_ERROR,
                 )
 
         res = await self.__get_obligations_request(egn, license_number)
 
-        return KatApiResponse(res.success, res.error_message)
+        return KatApiResponse(res.success, res.error_message, res.error_type)
 
     async def async_check_obligations(
         self, egn: str, license_number: str
@@ -153,7 +188,7 @@ class KatApi:
             has_obligations = KatObligationsSimpleResponse(res.raw_data).has_obligations
             return KatApiResponse(has_obligations)
         else:
-            return KatApiResponse(None, res.error_message)
+            return KatApiResponse(None, res.error_message, res.error_type)
 
     async def async_get_obligations(
         self, egn: str, license_number: str
@@ -187,7 +222,9 @@ class KatApi:
 
         except httpx.TimeoutException:
             return _WebResponse(
-                None, f"{_ERR_PREFIX_API} Request timed out for {license_number}"
+                None,
+                f"{_ERR_PREFIX_API} Request timed out for {license_number}",
+                KatErrorType.TIMEOUT,
             )
 
         except httpx.HTTPError as ex:
@@ -198,13 +235,16 @@ class KatApi:
                     return _WebResponse(
                         data,
                         f"{_ERR_PREFIX_API} EGN or Driving License Number was not valid",
+                        KatErrorType.VALIDATION_ERROR,
                     )
 
                 # code = GL_UNDELIVERED_AND_UNPAID_DEBTS_E
                 # This means the KAT website died for a bit
                 if data["code"] == "GL_00038_E":
                     return _WebResponse(
-                        data, f"{_ERR_PREFIX_API} Website is down temporarily. :("
+                        data,
+                        f"{_ERR_PREFIX_API} Website is down temporarily. :(",
+                        KatErrorType.API_UNAVAILABLE,
                     )
 
             else:
