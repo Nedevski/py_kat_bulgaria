@@ -31,21 +31,24 @@ LICENSE_NUMBER = "123456789"
 
 def example_code():
     """Example Code"""
-    
+
     api = KatApi()
 
     try:
         # Validates EGN and Driver License Number locally and with the API
         verify = asyncio.run(api.async_verify_credentials(EGN, LICENSE_NUMBER))
-        print(f"Valid: {verify.data}")
+        print(f"IsValid: {verify.data}")
+        print(f"{verify}\n")
 
         # Checks if a person has obligations, returns true or false
         has_obligations = asyncio.run(api.async_check_obligations(EGN, LICENSE_NUMBER))
         print(f"HasObligations: {has_obligations.data}")
+        print(f"{has_obligations}\n")
 
         # Returns an object with additinal data (if any)
         obligations = asyncio.run(api.async_get_obligations(EGN, LICENSE_NUMBER))
-        print(f"Obligations details: {obligations.data}")
+        print(f"ObligationDetails: {obligations.data}")
+        print(f"{obligations}")
 
     except KatError as err:
         # Malformed response.

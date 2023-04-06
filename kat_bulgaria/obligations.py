@@ -21,6 +21,29 @@ REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
 
 
+# region ----- Errors
+
+
+class KatError(Exception):
+    """Error wrapper"""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
+class KatErrorType(Enum):
+    """Different KAT api error types"""
+
+    VALIDATION_ERROR = 1
+    API_UNAVAILABLE = 2
+    TIMEOUT = 3
+
+
+# endregion
+
+# region ----- Responses
+
+
 @dataclass
 class KatObligationsSimpleResponse:
     """The obligations response object."""
@@ -64,42 +87,6 @@ class KatObligationsResponse:
                 )
 
 
-class KatErrorType(Enum):
-    """Different KAT api error types"""
-
-    VALIDATION_ERROR = 1
-    API_UNAVAILABLE = 2
-    TIMEOUT = 3
-
-
-@dataclass
-class _WebResponse:
-    """Wrapper for the HTTP response"""
-
-    raw_data: any
-    error_message: str
-    error_type: KatErrorType
-    success: bool
-
-    def __init__(
-        self,
-        raw_data: any,
-        error_message: str = None,
-        error_type: KatErrorType = None,
-    ):
-        self.raw_data = raw_data
-        self.error_message = error_message
-        self.error_type = None
-
-        if error_message is None:
-            self.success = True
-        else:
-            self.success = False
-
-        if error_type is not None:
-            self.error_type: error_type
-
-
 T = TypeVar("T", KatObligationsResponse, KatObligationsSimpleResponse, bool)
 
 
@@ -125,11 +112,32 @@ class KatApiResponse(Generic[T]):
         self.error_type = error_type
 
 
-class KatError(Exception):
-    """Error wrapper"""
+# endregion
 
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
+
+@dataclass
+class _WebResponse:
+    """Wrapper for the HTTP response"""
+
+    raw_data: any
+    error_message: str
+    error_type: KatErrorType
+    success: bool
+
+    def __init__(
+        self,
+        raw_data: any,
+        error_message: str = None,
+        error_type: KatErrorType = None,
+    ):
+        self.raw_data = raw_data
+        self.error_message = error_message
+        self.error_type = error_type
+
+        if error_message is None:
+            self.success = True
+        else:
+            self.success = False
 
 
 class KatApi:
@@ -196,9 +204,11 @@ class KatApi:
         """Get all obligations"""
 
         res = await self.__get_obligations_request(egn, license_number)
-        data = KatObligationsResponse(res.raw_data)
 
-        return KatApiResponse(data)
+        if res.success:
+            return KatApiResponse(KatObligationsResponse(res.raw_data))
+        else:
+            return KatApiResponse(None, res.error_message, res.error_type)
 
     async def __get_obligations_request(
         self, egn: str, license_number: str
