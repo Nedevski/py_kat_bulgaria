@@ -9,6 +9,7 @@
 This library allows you to check if you have fines from [KAT Bulgaria](https://e-uslugi.mvr.bg/services/kat-obligations) programatically.
 
 The code here is a simple wrapper around the API, providing you with error validation and type safety.
+
 It does **NOT** save or log your data anywhere and it works with a single HTTPS request.
 
 ## Installation
