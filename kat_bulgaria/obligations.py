@@ -1,5 +1,6 @@
 """Obligations module"""
 
+import array
 from dataclasses import dataclass
 from enum import Enum
 from typing import Generic, TypeVar
@@ -10,12 +11,14 @@ import httpx
 
 _REQUEST_TIMEOUT = 5
 _KAT_OBLIGATIONS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?mode=1&obligedPersonIdent={egn}&drivingLicenceNumber={license_number}"
-
 _RESP_HAS_NON_HANDED_SLIP = "hasNonHandedSlip"
 _RESP_OBLIGATIONS = "obligations"
 
 _ERR_PREFIX = "[KAT]"
 _ERR_PREFIX_API = "[KAT_API]"
+
+ERR_INVALID_EGN = f"{_ERR_PREFIX} EGN is not valid"
+ERR_INVALID_LICENSE = f"{_ERR_PREFIX} Driving License Number not valid"
 
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
@@ -60,7 +63,7 @@ class KatObligationsResponse:
 
     has_non_handed_slip: bool
     has_obligations: bool
-    obligations: any
+    obligations: array.array
 
     def __init__(self, data: any) -> None:
         self.obligations = []
@@ -153,7 +156,7 @@ class KatApi:
 
         if egn is None:
             return KatApiResponse(
-                False,
+                None,
                 f"{_ERR_PREFIX} EGN is missing or emtpy",
                 KatErrorType.VALIDATION_ERROR,
             )
@@ -161,14 +164,14 @@ class KatApi:
             egn_match = re.search(REGEX_EGN, egn)
             if egn_match is None:
                 return KatApiResponse(
-                    False,
-                    f"{_ERR_PREFIX} EGN is not valid",
+                    None,
+                    ERR_INVALID_EGN,
                     KatErrorType.VALIDATION_ERROR,
                 )
 
         if license_number is None:
             return KatApiResponse(
-                False,
+                None,
                 f"{_ERR_PREFIX} Driving License Number missing",
                 KatErrorType.VALIDATION_ERROR,
             )
@@ -176,8 +179,8 @@ class KatApi:
             license_match = re.search(REGEX_DRIVING_LICENSE, license_number)
             if license_match is None:
                 return KatApiResponse(
-                    False,
-                    f"{_ERR_PREFIX} Driving License Number not valid",
+                    None,
+                    ERR_INVALID_LICENSE,
                     KatErrorType.VALIDATION_ERROR,
                 )
 
@@ -243,16 +246,16 @@ class KatApi:
                 # Invalid user data (EGN or License Number)
                 if data["code"] == "GL_00038_E":
                     return _WebResponse(
-                        data,
+                        None,
                         f"{_ERR_PREFIX_API} EGN or Driving License Number was not valid",
                         KatErrorType.VALIDATION_ERROR,
                     )
 
                 # code = GL_UNDELIVERED_AND_UNPAID_DEBTS_E
                 # This means the KAT website died for a bit
-                if data["code"] == "GL_00038_E":
+                if data["code"] == "GL_UNDELIVERED_AND_UNPAID_DEBTS_E":
                     return _WebResponse(
-                        data,
+                        None,
                         f"{_ERR_PREFIX_API} Website is down temporarily. :(",
                         KatErrorType.API_UNAVAILABLE,
                     )
@@ -264,7 +267,8 @@ class KatApi:
                 ) from ex
 
         if _RESP_HAS_NON_HANDED_SLIP not in data or _RESP_OBLIGATIONS not in data:
-            # This should never happen. If we go in this if, this probably means they changed their schema
+            # This should never happen.
+            # If we go in this if, this probably means they changed their schema
             raise KatError(
                 f"{_ERR_PREFIX_API} Website returned a malformed response: {data}"
             )

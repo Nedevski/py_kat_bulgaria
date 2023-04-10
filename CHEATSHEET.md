@@ -7,6 +7,7 @@ Mount venv:
  Install requirements:
 
  ```pip install -r requirements.txt``` 
+ ```pip install -r requirements-test.txt``` 
 ___
 
  Run tests:
