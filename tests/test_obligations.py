@@ -15,6 +15,8 @@ from .conftest import EGN, LICENSE, INVALID_EGN, INVALID_LICENSE
 
 
 # region verify_credentials
+
+
 @pytest.mark.asyncio
 async def test_verify_credentials(
     httpx_mock: HTTPXMock, s200_no_obligations: pytest.fixture
