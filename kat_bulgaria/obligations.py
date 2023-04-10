@@ -1,6 +1,5 @@
 """Obligations module"""
 
-import array
 from dataclasses import dataclass
 from enum import Enum
 from typing import Generic, TypeVar
@@ -44,6 +43,38 @@ class KatErrorType(Enum):
 
 # endregion
 
+# region ----- Data types
+
+
+class KatObligation:
+    """Obligation model."""
+
+    description: str
+    document_number: str
+    person_name: str
+    person_identifier: str
+    date_created: str
+    date_served: str
+    amount: float
+    discount: int
+
+    def __init__(self, obligation: any):
+        """Parse the data."""
+        self.description = obligation["paymentReason"]
+        self.document_number = obligation["additionalData"]["documentNumber"]
+
+        self.person_name = obligation["obligedPersonName"]
+        self.person_identifier = obligation["obligedPersonIdent"]
+
+        self.date_created = obligation["additionalData"]["fishCreateDate"]
+        self.date_served = obligation["obligationDate"]
+
+        self.amount = float(obligation["amount"])
+        self.discount = int(obligation["additionalData"]["discount"])
+
+
+# endregion
+
 # region ----- Responses
 
 
@@ -63,7 +94,7 @@ class KatObligationsResponse:
 
     has_non_handed_slip: bool
     has_obligations: bool
-    obligations: array.array
+    obligations: list[KatObligation]
 
     def __init__(self, data: any) -> None:
         self.obligations = []
@@ -74,20 +105,7 @@ class KatObligationsResponse:
 
         if len(data[_RESP_OBLIGATIONS]) > 0:
             for obligation in data[_RESP_OBLIGATIONS]:
-                self.obligations.append(
-                    {
-                        "amount": obligation["amount"],
-                        "description": obligation["paymentReason"],
-                        "documentNumber": obligation["additionalData"][
-                            "documentNumber"
-                        ],
-                        "date_created": obligation["additionalData"]["fishCreateDate"],
-                        "date_served": obligation["obligationDate"],
-                        "person_name": obligation["obligedPersonName"],
-                        "person_identifier": obligation["obligedPersonIdent"],
-                        "discount": obligation["additionalData"]["discount"],
-                    }
-                )
+                self.obligations.append(KatObligation(obligation))
 
 
 T = TypeVar("T", KatObligationsResponse, KatObligationsSimpleResponse, bool)

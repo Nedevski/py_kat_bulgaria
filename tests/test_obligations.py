@@ -305,6 +305,16 @@ async def test_get_obligations_has_handed(
     assert resp.data.has_non_handed_slip is False
     assert len(resp.data.obligations) == 1
 
+    oblig = resp.data.obligations[0]
+    assert oblig.description == "НП 22-1085-002609 14.10.2022"
+    assert oblig.document_number == "22-1085-002609"
+    assert oblig.person_name == "ИМЕ ПРЕЗИМЕ ФАМИЛИЯ"
+    assert oblig.person_identifier == "1234567890"
+    assert oblig.date_created == "2022-10-14"
+    assert oblig.date_served == "2023-04-06T00:00:00"
+    assert oblig.amount == 100.0
+    assert oblig.discount == 20
+
     assert not resp.error_message
     assert not resp.error_type
 
