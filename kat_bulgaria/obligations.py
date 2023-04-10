@@ -149,40 +149,36 @@ class KatApi:
     def __init__(self):
         """Constructor"""
 
+    def __validate_credentials(self, egn: str, license_number: str) -> str | None:
+        """Validate EGN/License locally."""
+
+        # Validate EGN
+        if egn is None:
+            return f"{_ERR_PREFIX} EGN is missing or emtpy"
+        else:
+            egn_match = re.search(REGEX_EGN, egn)
+            if egn_match is None:
+                return ERR_INVALID_EGN
+
+        # Validate License Number
+        if license_number is None:
+            return f"{_ERR_PREFIX} Driving License Number missing"
+        else:
+            license_match = re.search(REGEX_DRIVING_LICENSE, license_number)
+            if license_match is None:
+                return ERR_INVALID_LICENSE
+
+        # If everything is valid - return None
+        return None
+
     async def async_verify_credentials(
         self, egn: str, license_number: str
     ) -> KatApiResponse[bool]:
         """Confirm that the credentials are correct."""
 
-        if egn is None:
-            return KatApiResponse(
-                None,
-                f"{_ERR_PREFIX} EGN is missing or emtpy",
-                KatErrorType.VALIDATION_ERROR,
-            )
-        else:
-            egn_match = re.search(REGEX_EGN, egn)
-            if egn_match is None:
-                return KatApiResponse(
-                    None,
-                    ERR_INVALID_EGN,
-                    KatErrorType.VALIDATION_ERROR,
-                )
-
-        if license_number is None:
-            return KatApiResponse(
-                None,
-                f"{_ERR_PREFIX} Driving License Number missing",
-                KatErrorType.VALIDATION_ERROR,
-            )
-        else:
-            license_match = re.search(REGEX_DRIVING_LICENSE, license_number)
-            if license_match is None:
-                return KatApiResponse(
-                    None,
-                    ERR_INVALID_LICENSE,
-                    KatErrorType.VALIDATION_ERROR,
-                )
+        validation_msg = self.__validate_credentials(egn, license_number)
+        if validation_msg is not None:
+            return KatApiResponse(None, validation_msg, KatErrorType.VALIDATION_ERROR)
 
         res = await self.__get_obligations_request(egn, license_number)
 
@@ -192,6 +188,10 @@ class KatApi:
         self, egn: str, license_number: str
     ) -> KatApiResponse[bool]:
         """Check if the person has obligations"""
+
+        validation_msg = self.__validate_credentials(egn, license_number)
+        if validation_msg is not None:
+            return KatApiResponse(None, validation_msg, KatErrorType.VALIDATION_ERROR)
 
         res = await self.__get_obligations_request(egn, license_number)
 
@@ -205,6 +205,10 @@ class KatApi:
         self, egn: str, license_number: str
     ) -> KatApiResponse[KatObligationsResponse]:
         """Get all obligations"""
+
+        validation_msg = self.__validate_credentials(egn, license_number)
+        if validation_msg is not None:
+            return KatApiResponse(None, validation_msg, KatErrorType.VALIDATION_ERROR)
 
         res = await self.__get_obligations_request(egn, license_number)
 

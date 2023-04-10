@@ -165,6 +165,32 @@ async def test_check_obligations_has_handed(
 
 
 @pytest.mark.asyncio
+async def test_check_obligations_invalid_egn(httpx_mock: HTTPXMock) -> None:
+    """Check obligations - local EGN validation failed."""
+
+    resp = await KatApi().async_check_obligations(INVALID_EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 0
+    assert resp.success is False
+    assert resp.data is None
+    assert resp.error_message == ERR_INVALID_EGN
+    assert resp.error_type is KatErrorType.VALIDATION_ERROR
+
+
+@pytest.mark.asyncio
+async def test_check_obligations_invalid_driver_license(httpx_mock: HTTPXMock) -> None:
+    """Check obligations - local Driver License validation failed."""
+
+    resp = await KatApi().async_check_obligations(EGN, INVALID_LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 0
+    assert resp.success is False
+    assert resp.data is None
+    assert resp.error_message == ERR_INVALID_LICENSE
+    assert resp.error_type is KatErrorType.VALIDATION_ERROR
+
+
+@pytest.mark.asyncio
 async def test_check_obligations_api_invalid_data_sent(
     httpx_mock: HTTPXMock, s400_invalid_user_details: pytest.fixture
 ) -> None:
@@ -280,6 +306,32 @@ async def test_get_obligations_has_handed(
     assert not resp.error_message
     assert not resp.error_type
 
+
+
+@pytest.mark.asyncio
+async def test_get_obligations_invalid_egn(httpx_mock: HTTPXMock) -> None:
+    """Get obligations - local EGN validation failed."""
+
+    resp = await KatApi().async_get_obligations(INVALID_EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 0
+    assert resp.success is False
+    assert resp.data is None
+    assert resp.error_message == ERR_INVALID_EGN
+    assert resp.error_type is KatErrorType.VALIDATION_ERROR
+
+
+@pytest.mark.asyncio
+async def test_get_obligations_invalid_driver_license(httpx_mock: HTTPXMock) -> None:
+    """Get obligations - local Driver License validation failed."""
+
+    resp = await KatApi().async_get_obligations(EGN, INVALID_LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 0
+    assert resp.success is False
+    assert resp.data is None
+    assert resp.error_message == ERR_INVALID_LICENSE
+    assert resp.error_type is KatErrorType.VALIDATION_ERROR
 
 @pytest.mark.asyncio
 async def test_get_obligations_api_invalid_data_sent(
