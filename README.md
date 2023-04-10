@@ -10,7 +10,9 @@ This library allows you to check if you have fines from [KAT Bulgaria](https://e
 
 The code here is a simple wrapper around the API, providing you with error validation and type safety.
 
-It does **NOT** save or log your data anywhere and it works with a single HTTPS request.
+It does **NOT** save or log your data anywhere and it works with a single API endpoint.
+
+The reason this library is needed is because the government website is highly unstable and often throws random 400's and Timeouts. This library handles all known bad responses (as of the time of writing) and provides a meaningful error message and an error code for every request.
 
 ## Installation
 
@@ -37,17 +39,17 @@ def example_code():
     api = KatApi()
 
     try:
-        # Validates EGN and Driver License Number locally and with the API
+        # Validates EGN and Driver License Number locally and with the API.
         verify = asyncio.run(api.async_verify_credentials(EGN, LICENSE_NUMBER))
         print(f"IsValid: {verify.data}")
         print(f"{verify}\n")
 
-        # Checks if a person has obligations, returns true or false
+        # Checks if a person has obligations, returns true or false.
         has_obligations = asyncio.run(api.async_check_obligations(EGN, LICENSE_NUMBER))
         print(f"HasObligations: {has_obligations.data}")
         print(f"{has_obligations}\n")
 
-        # Returns an object with additinal data (if any)
+        # Returns an object with additinal data (if any).
         obligations = asyncio.run(api.async_get_obligations(EGN, LICENSE_NUMBER))
         print(f"ObligationDetails: {obligations.data}")
         print(f"{obligations}")
@@ -71,10 +73,10 @@ example_code()
 # No fines/obligations:
 {"obligations":[],"hasNonHandedSlip":false}
 
-# One or more fines/obligations, which have not been served
+# One or more fines/obligations, which have not been served:
 {"obligations":[],"hasNonHandedSlip":true}
 
-# One or more fines/obligations, which *have* been served
+# One or more fines/obligations, which *have* been served:
 {
     "obligations": [
         {
@@ -116,7 +118,7 @@ example_code()
 
 # Timeout:
 # From time to time the API hangs and it takes more than 10s to load.
-# You can retry immediately, you can wait a couple of minutes
 # Господине, не виждате ли че сме в обедна почивка???
-# At this point it's out of your hands
+# At this point it's out of your hands.
+# Wait a reasonable time and try calling it again.
 ```
