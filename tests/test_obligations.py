@@ -307,7 +307,6 @@ async def test_get_obligations_has_handed(
     assert not resp.error_type
 
 
-
 @pytest.mark.asyncio
 async def test_get_obligations_invalid_egn(httpx_mock: HTTPXMock) -> None:
     """Get obligations - local EGN validation failed."""
@@ -332,6 +331,7 @@ async def test_get_obligations_invalid_driver_license(httpx_mock: HTTPXMock) -> 
     assert resp.data is None
     assert resp.error_message == ERR_INVALID_LICENSE
     assert resp.error_type is KatErrorType.VALIDATION_ERROR
+
 
 @pytest.mark.asyncio
 async def test_get_obligations_api_invalid_data_sent(
