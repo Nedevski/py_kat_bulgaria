@@ -25,5 +25,5 @@ One-liner:
 ```python3 setup.py bdist_wheel && twine upload dist/*```
 ___
 
-If pip does not see the latest version of the package (run twice)
+If pip does not see the latest version of the package in HomeAssistant (run twice)
 ```pip3 uninstall kat_bulgaria -y && pip3 install kat_bulgaria --upgrade```
