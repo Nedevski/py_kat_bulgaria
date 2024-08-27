@@ -10,8 +10,8 @@ import httpx
 
 _REQUEST_TIMEOUT = 5
 _KAT_OBLIGATIONS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?mode=1&obligedPersonIdent={egn}&drivingLicenceNumber={license_number}"
-_RESP_HAS_NON_HANDED_SLIP = "hasNonHandedSlip"
 _RESP_OBLIGATIONS = "obligations"
+_RESP_OBLIGATIONS_DATA = "obligationsData"
 
 _ERR_PREFIX = "[KAT]"
 _ERR_PREFIX_API = "[KAT_API]"
@@ -51,7 +51,6 @@ class KatObligation:
 
     description: str
     document_number: str
-    person_name: str
     person_identifier: str
     date_created: str
     date_served: str
@@ -63,10 +62,9 @@ class KatObligation:
         self.description = obligation["paymentReason"]
         self.document_number = obligation["additionalData"]["documentNumber"]
 
-        self.person_name = obligation["obligedPersonName"]
-        self.person_identifier = obligation["obligedPersonIdent"]
+        self.person_identifier = obligation["additionalData"]["obligedPersonIdent"]
 
-        self.date_created = obligation["additionalData"]["fishCreateDate"]
+        self.date_created = obligation["additionalData"]["breachDate"]
         self.date_served = obligation["obligationDate"]
 
         self.amount = float(obligation["amount"])
@@ -84,7 +82,7 @@ class KatObligationsSimpleResponse:
 
     def __init__(self, data: any) -> None:
         self.has_obligations = (
-            data[_RESP_HAS_NON_HANDED_SLIP] or len(data[_RESP_OBLIGATIONS]) > 0
+            len(data[_RESP_OBLIGATIONS]) > 0
         )
 
 
@@ -92,15 +90,13 @@ class KatObligationsSimpleResponse:
 class KatObligationsResponse:
     """The obligations response object."""
 
-    has_non_handed_slip: bool
     has_obligations: bool
     obligations: list[KatObligation]
 
     def __init__(self, data: any) -> None:
         self.obligations = []
-        self.has_non_handed_slip = data[_RESP_HAS_NON_HANDED_SLIP]
         self.has_obligations = (
-            data[_RESP_HAS_NON_HANDED_SLIP] or len(data[_RESP_OBLIGATIONS]) > 0
+            len(data[_RESP_OBLIGATIONS]) > 0
         )
 
         if len(data[_RESP_OBLIGATIONS]) > 0:
@@ -253,6 +249,16 @@ class KatApi:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(url, timeout=_REQUEST_TIMEOUT)
                 data = resp.json()
+                if _RESP_OBLIGATIONS_DATA not in data:
+                    # This should never happen.
+                    # If we go in this if, this probably means they changed their schema
+                    raise KatError(
+                        f"{_ERR_PREFIX_API} Website returned a malformed response: {data}"
+                    )
+            
+                if _RESP_OBLIGATIONS_DATA in data and len(data[_RESP_OBLIGATIONS_DATA]) > 0:
+                    # Flatten the structure for easier access
+                    data = data[_RESP_OBLIGATIONS_DATA][0]
                 resp.raise_for_status()
 
         except httpx.TimeoutException:
@@ -287,12 +293,5 @@ class KatApi:
                 raise KatError(
                     f"{_ERR_PREFIX_API} Website returned an unknown error: {str(ex)}"
                 ) from ex
-
-        if _RESP_HAS_NON_HANDED_SLIP not in data or _RESP_OBLIGATIONS not in data:
-            # This should never happen.
-            # If we go in this if, this probably means they changed their schema
-            raise KatError(
-                f"{_ERR_PREFIX_API} Website returned a malformed response: {data}"
-            )
 
         return _WebResponse(data)
