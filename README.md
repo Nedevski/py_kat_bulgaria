@@ -1,20 +1,3 @@
-# DEPRECATED
-
----
----
----
-
-**КАТ обновиха системата си и библиотеката вече не работи.**
-
-**Освен това не съм сигурен дали при проверка онлайн глобите не се броят за връчени - т.е. да започва да тече срока за плащане с 30% отстъпка.**
-
-**Докато това не стане ясно - библиотеката няма да бъде поправена и няма да работи.**
-
----
----
----
-
-
 ## Summary
 
 [![PyPI Link](https://img.shields.io/pypi/v/kat_bulgaria?style=flat-square)](https://pypi.org/project/kat-bulgaria/)
@@ -29,7 +12,7 @@ The code here is a simple wrapper around the API, providing you with error valid
 
 It does **NOT** save or log your data anywhere and it works with a single API endpoint.
 
-The reason this library is needed is because the government website is highly unstable and often throws random 400's and Timeouts. This library handles all known bad responses (as of the time of writing) and provides a meaningful error message and an error code for every request.
+The reason this library is needed is because the government website is highly unstable and often throws random errors and Timeouts. This library handles all known bad responses (as of the time of writing) and provides a meaningful error message and an error code for every request.
 
 ## Installation
 
@@ -38,104 +21,76 @@ pip install kat_bulgaria
 ```
 
 ## Example:
+
 ```python
-import asyncio
-from dataclasses import asdict
 from kat_bulgaria.obligations import (
-    KatError,
-    KatApi,
+    KatApi, KatError, KatErrorType
 )
 
 EGN = "0011223344"
 LICENSE_NUMBER = "123456789"
 
 
-def example_code():
-    """Example Code"""
-
-    api = KatApi()
+async def sample_code():
+    """Validates credentials"""
 
     try:
         # Validates EGN and Driver License Number locally and with the API.
-        verify = asyncio.run(api.async_verify_credentials(EGN, LICENSE_NUMBER))
-        print(f"IsValid: {verify.data}")
-        print(f"{verify}\n")
+        is_valid = await KatApi().validate_credentials(EGN, LICENSE_NUMBER)
+        print(f"Valid: {is_valid}\n")
 
         # Checks if a person has obligations, returns true or false.
-        has_obligations = asyncio.run(api.async_check_obligations(EGN, LICENSE_NUMBER))
-        print(f"HasObligations: {has_obligations.data}")
-        print(f"{has_obligations}\n")
-
-        # Returns an object with additinal data (if any).
-        obligations = asyncio.run(api.async_get_obligations(EGN, LICENSE_NUMBER))
-        print(f"ObligationDetails: {obligations.data}")
-        print(f"{obligations}")
+        obligations = await api.get_obligations(EGN, LICENSE_NUMBER)
+        print(f"Obligation Count: {len(obligations)}\n")
+        print(f"Raw: {obligations}\n")
 
     except KatError as err:
-        # Malformed response.
-        # If you get this probably KAT updated their website.
-        # Open an issue or contact me for fix.
-        print(f"Error: {str(err)}")
-        return
+        # Code should throw only KatError.
+        # Open an issue if you encounter another exception type.
+        print(f"Error Type: {err.error_type}\n")
+        print(f"Error Message: {err.error_message}")
 
+        match err.error_type:
+            case KatErrorType.VALIDATION_EGN_INVALID:
+                # Regex validation for EGN failed.
 
-example_code()
+            case KatErrorType.VALIDATION_LICENSE_INVALID:
+                # Regex validation for Driving License failed.
+
+            case KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE:
+                # KAT API returned an error because the EGN/License combination was not found.
+
+            case KatErrorType.API_TIMEOUT:
+                # KAT API is slow. Happens couple of times per day.
+                # Retry or wait for some time to pass.
+
+            case KatErrorType.API_ERROR_READING_DATA:
+                # KAT API has pooped its pants and is unable to do anything.
+                # That happens sometimes, either retry or wait for a bit.
+
+            case KatErrorType.API_UNKNOWN_ERROR:
+                # KAT API returned a non-200 status code. Should never happen.
+                # If it happens - open an issue and attach the response of the body.
+
+            case KatErrorType.API_INVALID_SCHEMA:
+                # KAT API returned response with a new schema.
+                # Indicates the API has been updated and I should update this package.
+                # Open an issue if you encounter this.
+
+sample_code()
 
 ```
 
-## Known raw API responses (debug info):
+## Known raw API responses:
 
+You can find sample API responses in `/tests/fixtures`.
 
-```python
-# No fines/obligations:
-{"obligations":[],"hasNonHandedSlip":false}
+I also document all sample responses in [this issue](https://github.com/Nedevski/py_kat_bulgaria/issues/2) for clarity.
 
-# One or more fines/obligations, which have not been served:
-{"obligations":[],"hasNonHandedSlip":true}
+If you have any fines, please add a comment to the issue above with the full API response.
 
-# One or more fines/obligations, which *have* been served:
-{
-    "obligations": [
-        {
-            "status": 0,
-            "amount": 100,
-            "discountAmount": 80,
-            "bic": "UBBSBGSF",
-            "iban": "BG22UBBS88883122944101",
-            "paymentReason": "НП 22-1085-002609 14.10.2022",
-            "pepCin": "",
-            "expirationDate": "2023-04-06T23:59:59",
-            "obligedPersonName": "ИМЕ ПРЕЗИМЕ ФАМИЛИЯ",
-            "obligedPersonIdent": "1234567890",
-            "obligedPersonIdentType": 1,
-            "obligationDate": "2023-04-06T00:00:00",
-            "obligationIdentifier": "PENAL_DECREE||22-1085-002609|100",
-            "type": 2,
-            "serviceID": 349,
-            "additionalData": {
-                "isServed": "True",
-                "discount": "20",
-                "isMainDocument": "False",
-                "documentType": "PENAL_DECREE",
-                "documentSeries": null,
-                "documentNumber": "22-1085-002609",
-                "amount": "100",
-                "fishCreateDate": "2022-10-14"
-            }
-        }
-    ],
-    "hasNonHandedSlip": false
-}
+You can get it by copying the url below and replacing EGN_GOES_HERE and LICENSE_GOES_HERE with your own data, then loading it in a browser.
 
-# Invalid EGN or Driver License Number:
-{"code":"GL_00038_E","message":"Няма данни за посоченото СУМПС/ЕГН или не се намира съответствие за издадено СУМПС на лице с посочения ЕГН/ЛНЧ"}
+https://e-uslugi.mvr.bg/api/Obligations/AND?obligatedPersonType=1&additinalDataForObligatedPersonType=1&mode=1&obligedPersonIdent=EGN_GOES_HERE&drivingLicenceNumber=LICENSE_GOES_HERE
 
-# The service is down, that happens a couple of times a day:
-{"code":"GL_UNDELIVERED_AND_UNPAID_DEBTS_E","message":"По технически причини към момента не може да бъде извършена справка за невръчени и неплатени НП и/или електронни фишове по Закона за движението по пътищата и/или по Кодекса за застраховането."}
-
-# Timeout:
-# From time to time the API hangs and it takes more than 10s to load.
-# Господине, не виждате ли че сме в обедна почивка???
-# At this point it's out of your hands.
-# Wait a reasonable time and try calling it again.
-```
+Feel free to remove any personal data in the strings, but try not to modify the json structure.

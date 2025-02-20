@@ -1,29 +1,41 @@
-Create venv:
-```python3 -m venv venv```
+### Create venv:
 
-Mount venv:
-```source venv/bin/activate```
+`python3 -m venv venv`
 
- Install requirements:
+### Mount venv:
 
- ```pip install -r requirements.txt``` 
- ```pip install -r requirements-test.txt``` 
-___
+`source venv/bin/activate`
 
- Run tests:
+### Install requirements:
 
- ```python3 setup.py pytest```
-___
+`pip install -r requirements.txt`
 
-[Create a package tutorial](https://medium.com/analytics-vidhya/how-to-create-a-python-library-7d5aea80cc3f)
+`pip install -r requirements-test.txt`
 
-Upload package:
-```python3 setup.py bdist_wheel```
-```twine upload dist/*```
+---
 
-One-liner:
-```python3 setup.py bdist_wheel && twine upload dist/*```
-___
+### Run tests:
 
-If pip does not see the latest version of the package in HomeAssistant (run twice)
-```pip3 uninstall kat_bulgaria -y && pip3 install kat_bulgaria --upgrade```
+`python3 setup.py pytest`
+
+---
+
+### Create a package
+
+[Tutorial link](https://medium.com/analytics-vidhya/how-to-create-a-python-library-7d5aea80cc3f)
+
+### Upload package:
+
+`python3 setup.py bdist_wheel`
+
+`twine upload dist/*`
+
+### One-liner:
+
+`python3 setup.py bdist_wheel && twine upload dist/*`
+
+---
+
+### If pip does not see the latest version of the package in HomeAssistant (run twice)
+
+`pip3 uninstall kat_bulgaria -y && pip3 install kat_bulgaria --upgrade`

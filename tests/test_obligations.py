@@ -7,8 +7,12 @@ from pytest_httpx import HTTPXMock
 from kat_bulgaria.obligations import (
     ERR_INVALID_EGN,
     ERR_INVALID_LICENSE,
+    ERR_INVALID_USER_DATA,
+    ERR_API_DOWN,
     KatApi,
+    KatError,
     KatErrorType,
+    KatObligation
 )
 
 from .conftest import EGN, LICENSE, INVALID_EGN, INVALID_LICENSE
@@ -18,80 +22,60 @@ from .conftest import EGN, LICENSE, INVALID_EGN, INVALID_LICENSE
 
 
 @pytest.mark.asyncio
-async def test_verify_credentials(
-    httpx_mock: HTTPXMock, s200_no_obligations: pytest.fixture
+async def test_verify_credentials_success(
+    httpx_mock: HTTPXMock, ok_no_fines: pytest.fixture
 ) -> None:
     """Verify credentials - success."""
 
-    httpx_mock.add_response(json=s200_no_obligations)
+    httpx_mock.add_response(json=ok_no_fines)
 
-    resp = await KatApi().async_verify_credentials(EGN, LICENSE)
+    resp = await KatApi().validate_credentials(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is True
-    assert resp.data is True
-    assert not resp.error_message
-    assert not resp.error_type
+    assert resp is True
 
 
 @pytest.mark.asyncio
-async def test_verify_credentials_invalid_egn(httpx_mock: HTTPXMock) -> None:
+async def test_verify_credentials_local_invalid_egn(httpx_mock: HTTPXMock) -> None:
     """Verify credentials - local EGN validation failed."""
 
-    resp = await KatApi().async_verify_credentials(INVALID_EGN, LICENSE)
+    with pytest.raises(KatError) as ctx:
+        await KatApi().validate_credentials(INVALID_EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 0
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message == ERR_INVALID_EGN
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.VALIDATION_EGN_INVALID
+    assert ctx.value.error_message == ERR_INVALID_EGN
 
 
 @pytest.mark.asyncio
-async def test_verify_credentials_invalid_driver_license(httpx_mock: HTTPXMock) -> None:
+async def test_verify_credentials_local_invalid_driver_license(httpx_mock: HTTPXMock) -> None:
     """Verify credentials - local Driver License validation failed."""
 
-    resp = await KatApi().async_verify_credentials(EGN, INVALID_LICENSE)
+    with pytest.raises(KatError) as ctx:
+        await KatApi().validate_credentials(EGN, INVALID_LICENSE)
 
     assert len(httpx_mock.get_requests()) == 0
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message == ERR_INVALID_LICENSE
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.VALIDATION_LICENSE_INVALID
+    assert ctx.value.error_message == ERR_INVALID_LICENSE
 
 
 @pytest.mark.asyncio
-async def test_verify_credentials_api_invalid_data_sent(
-    httpx_mock: HTTPXMock, s400_invalid_user_details: pytest.fixture
+async def test_verify_credentials_api_invalid_user_data_sent(
+    httpx_mock: HTTPXMock, err_nodatafound: pytest.fixture
 ) -> None:
-    """Verify credentials - remote KAT API validation failed."""
+    """Verify credentials - no user found for credentials"""
 
-    httpx_mock.add_response(json=s400_invalid_user_details, status_code=400)
+    httpx_mock.add_response(json=err_nodatafound, status_code=200)
 
-    resp = await KatApi().async_verify_credentials(EGN, LICENSE)
+    with pytest.raises(KatError) as ctx:
+        await KatApi().validate_credentials(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is False
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
-
-
-@pytest.mark.asyncio
-async def test_verify_credentials_api_down(
-    httpx_mock: HTTPXMock, s400_service_down: pytest.fixture
-) -> None:
-    """Verify credentials - remote KAT API returns error."""
-
-    httpx_mock.add_response(json=s400_service_down, status_code=400)
-
-    resp = await KatApi().async_verify_credentials(EGN, LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is False
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.API_UNAVAILABLE
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
+    assert ctx.value.error_message == ERR_INVALID_USER_DATA
 
 
 @pytest.mark.asyncio
@@ -100,13 +84,47 @@ async def test_verify_credentials_api_timeout(httpx_mock: HTTPXMock) -> None:
 
     httpx_mock.add_exception(httpx.TimeoutException(""))
 
-    resp = await KatApi().async_verify_credentials(EGN, LICENSE)
+    with pytest.raises(KatError) as ctx:
+        await KatApi().validate_credentials(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is False
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.TIMEOUT
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_TIMEOUT
+    assert "request timed out for" in ctx.value.error_message
+
+
+@pytest.mark.asyncio
+async def test_verify_credentials_api_down(
+    httpx_mock: HTTPXMock, err_apidown: pytest.fixture
+) -> None:
+    """Verify credentials - remote KAT API returns reading error."""
+
+    httpx_mock.add_response(json=err_apidown, status_code=200)
+
+    with pytest.raises(KatError) as ctx:
+        await KatApi().validate_credentials(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_ERROR_READING_DATA
+    assert ctx.value.error_message == ERR_API_DOWN
+
+
+@pytest.mark.asyncio
+async def test_verify_credentials_non_success_status_code(
+    httpx_mock: HTTPXMock, ok_no_fines: pytest.fixture
+) -> None:
+    """Verify credentials - remote KAT API returns error."""
+
+    httpx_mock.add_response(json=ok_no_fines, status_code=400)
+
+    with pytest.raises(KatError) as ctx:
+        await KatApi().validate_credentials(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert "unknown error" in ctx.value.error_message
 
 
 # endregion
@@ -116,114 +134,94 @@ async def test_verify_credentials_api_timeout(httpx_mock: HTTPXMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_check_obligations_none(
-    httpx_mock: HTTPXMock, s200_no_obligations: pytest.fixture
+async def test_check_obligations_no_fines(
+    httpx_mock: HTTPXMock, ok_no_fines: pytest.fixture
 ) -> None:
     """Check obligations - None."""
 
-    httpx_mock.add_response(json=s200_no_obligations)
+    httpx_mock.add_response(json=ok_no_fines)
 
-    resp = await KatApi().async_check_obligations(EGN, LICENSE)
+    resp = await KatApi().get_obligations(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is True
-    assert resp.data is False
-    assert not resp.error_message
-    assert not resp.error_type
+    assert len(resp) == 0
 
 
 @pytest.mark.asyncio
-async def test_check_obligations_has_non_handed(
-    httpx_mock: HTTPXMock, s200_has_non_handed_slip: pytest.fixture
+async def test_check_obligations_field_mapping_success(
+    httpx_mock: HTTPXMock, ok_fine_served: pytest.fixture
 ) -> None:
-    """Check obligations - has NON-handed."""
+    """Check obligations - verify field mappings is successful."""
 
-    httpx_mock.add_response(json=s200_has_non_handed_slip)
+    httpx_mock.add_response(json=ok_fine_served)
 
-    resp = await KatApi().async_check_obligations(EGN, LICENSE)
+    resp = await KatApi().get_obligations(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is True
-    assert resp.data is True
-    assert not resp.error_message
-    assert not resp.error_type
+    assert len(resp) == 1
+    
+    obligation = resp[0]
+    
+    assert obligation.unit_group == 1
+    assert obligation.status == 0
+    assert obligation.amount == 100
+    assert obligation.discount_amount == 70
+    assert obligation.discount_percentage == 30
+    assert obligation.description == "ЕЛ.ФИШ СЕРИЯ K 0000000 29.03.2024"
+    assert obligation.is_served is True
+    assert obligation.vehicle_number == "PB 0000 АА"
+    assert obligation.date_breach == "2024-01-25"
+    assert obligation.date_issued == "2024-03-29"
+    assert obligation.document_series == "K"
+    assert obligation.document_number == "123456"
+    assert obligation.breach_of_order == "чл. 21, ал. 1, от ЗДвП"
 
 
 @pytest.mark.asyncio
-async def test_check_obligations_has_handed(
-    httpx_mock: HTTPXMock, s200_has_handed_slip: pytest.fixture
+async def test_check_obligations_has_served(
+    httpx_mock: HTTPXMock, ok_fine_served: pytest.fixture
 ) -> None:
-    """Check obligations - has NON-handed."""
+    """Check obligations - has served."""
 
-    httpx_mock.add_response(json=s200_has_handed_slip)
+    httpx_mock.add_response(json=ok_fine_served)
 
-    resp = await KatApi().async_check_obligations(EGN, LICENSE)
+    resp = await KatApi().get_obligations(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is True
-    assert resp.data is True
-    assert not resp.error_message
-    assert not resp.error_type
+    assert len(resp) == 1
+    assert resp[0].is_served is True
 
 
 @pytest.mark.asyncio
-async def test_check_obligations_invalid_egn(httpx_mock: HTTPXMock) -> None:
+async def test_check_obligations_has_not_served(
+    httpx_mock: HTTPXMock, ok_fine_not_served: pytest.fixture
+) -> None:
+    """Check obligations - has NOT served."""
+
+    httpx_mock.add_response(json=ok_fine_not_served)
+
+    resp = await KatApi().get_obligations(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert len(resp) == 1
+    assert resp[0].is_served is False
+
+
+@pytest.mark.asyncio
+async def test_check_obligations_invalid_user_data_sent(
+        httpx_mock: HTTPXMock, err_nodatafound: pytest.fixture
+) -> None:
     """Check obligations - local EGN validation failed."""
 
-    resp = await KatApi().async_check_obligations(INVALID_EGN, LICENSE)
+    httpx_mock.add_response(json=err_nodatafound)
 
-    assert len(httpx_mock.get_requests()) == 0
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message == ERR_INVALID_EGN
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
-
-
-@pytest.mark.asyncio
-async def test_check_obligations_invalid_driver_license(httpx_mock: HTTPXMock) -> None:
-    """Check obligations - local Driver License validation failed."""
-
-    resp = await KatApi().async_check_obligations(EGN, INVALID_LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 0
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message == ERR_INVALID_LICENSE
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
-
-
-@pytest.mark.asyncio
-async def test_check_obligations_api_invalid_data_sent(
-    httpx_mock: HTTPXMock, s400_invalid_user_details: pytest.fixture
-) -> None:
-    """Check obligations - remote KAT API validation failed."""
-
-    httpx_mock.add_response(json=s400_invalid_user_details, status_code=400)
-
-    resp = await KatApi().async_check_obligations(EGN, LICENSE)
+    with pytest.raises(KatError) as ctx:
+        await KatApi().get_obligations(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
-
-
-@pytest.mark.asyncio
-async def test_check_obligations_api_down(
-    httpx_mock: HTTPXMock, s400_service_down: pytest.fixture
-) -> None:
-    """Check obligations - remote KAT API returns error."""
-
-    httpx_mock.add_response(json=s400_service_down, status_code=400)
-
-    resp = await KatApi().async_check_obligations(EGN, LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.API_UNAVAILABLE
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
+    assert ctx.value.error_message == ERR_INVALID_USER_DATA
 
 
 @pytest.mark.asyncio
@@ -232,166 +230,62 @@ async def test_check_obligations_api_timeout(httpx_mock: HTTPXMock) -> None:
 
     httpx_mock.add_exception(httpx.TimeoutException(""))
 
-    resp = await KatApi().async_check_obligations(EGN, LICENSE)
+    with pytest.raises(KatError) as ctx:
+        await KatApi().get_obligations(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.TIMEOUT
-
-
-# endregion
-
-# region get_obligations
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_TIMEOUT
+    assert "request timed out for" in ctx.value.error_message
 
 
 @pytest.mark.asyncio
-async def test_get_obligations_none(
-    httpx_mock: HTTPXMock, s200_no_obligations: pytest.fixture
+async def test_check_obligations_api_down(
+    httpx_mock: HTTPXMock, err_apidown: pytest.fixture
 ) -> None:
-    """Get obligations - None."""
+    """Check obligations - remote KAT API returns reading error."""
 
-    httpx_mock.add_response(json=s200_no_obligations)
+    httpx_mock.add_response(json=err_apidown, status_code=200)
 
-    resp = await KatApi().async_get_obligations(EGN, LICENSE)
+    with pytest.raises(KatError) as ctx:
+        await KatApi().get_obligations(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is True
-
-    assert resp.data.has_obligations is False
-    assert resp.data.has_non_handed_slip is False
-    assert len(resp.data.obligations) == 0
-
-    assert not resp.error_message
-    assert not resp.error_type
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_ERROR_READING_DATA
+    assert "unable to process the request" in ctx.value.error_message
 
 
 @pytest.mark.asyncio
-async def test_get_obligations_has_non_handed(
-    httpx_mock: HTTPXMock, s200_has_non_handed_slip: pytest.fixture
+async def test_check_obligations_non_success_status_code(
+    httpx_mock: HTTPXMock, ok_no_fines: pytest.fixture
 ) -> None:
-    """Get obligations - has NON-handed."""
+    """Check obligations - remote KAT API returns error."""
 
-    httpx_mock.add_response(json=s200_has_non_handed_slip)
+    httpx_mock.add_response(json=ok_no_fines, status_code=400)
 
-    resp = await KatApi().async_get_obligations(EGN, LICENSE)
+    with pytest.raises(KatError) as ctx:
+        await KatApi().get_obligations(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is True
-
-    assert resp.data.has_obligations is True
-    assert resp.data.has_non_handed_slip is True
-    assert len(resp.data.obligations) == 0
-
-    assert not resp.error_message
-    assert not resp.error_type
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert "unknown error" in ctx.value.error_message
 
 
 @pytest.mark.asyncio
-async def test_get_obligations_has_handed(
-    httpx_mock: HTTPXMock, s200_has_handed_slip: pytest.fixture
+async def test_check_obligations_sample2(
+    httpx_mock: HTTPXMock, ok_sample2_6fines: pytest.fixture
 ) -> None:
-    """Get obligations - has NON-handed."""
+    """Check obligations - has served."""
 
-    httpx_mock.add_response(json=s200_has_handed_slip)
+    httpx_mock.add_response(json=ok_sample2_6fines)
 
-    resp = await KatApi().async_get_obligations(EGN, LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is True
-
-    assert resp.data.has_obligations is True
-    assert resp.data.has_non_handed_slip is False
-    assert len(resp.data.obligations) == 1
-
-    oblig = resp.data.obligations[0]
-    assert oblig.description == "НП 22-1085-002609 14.10.2022"
-    assert oblig.document_number == "22-1085-002609"
-    assert oblig.person_name == "ИМЕ ПРЕЗИМЕ ФАМИЛИЯ"
-    assert oblig.person_identifier == "1234567890"
-    assert oblig.date_created == "2022-10-14"
-    assert oblig.date_served == "2023-04-06T00:00:00"
-    assert oblig.amount == 100.0
-    assert oblig.discount == 20
-
-    assert not resp.error_message
-    assert not resp.error_type
-
-
-@pytest.mark.asyncio
-async def test_get_obligations_invalid_egn(httpx_mock: HTTPXMock) -> None:
-    """Get obligations - local EGN validation failed."""
-
-    resp = await KatApi().async_get_obligations(INVALID_EGN, LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 0
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message == ERR_INVALID_EGN
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
-
-
-@pytest.mark.asyncio
-async def test_get_obligations_invalid_driver_license(httpx_mock: HTTPXMock) -> None:
-    """Get obligations - local Driver License validation failed."""
-
-    resp = await KatApi().async_get_obligations(EGN, INVALID_LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 0
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message == ERR_INVALID_LICENSE
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
-
-
-@pytest.mark.asyncio
-async def test_get_obligations_api_invalid_data_sent(
-    httpx_mock: HTTPXMock, s400_invalid_user_details: pytest.fixture
-) -> None:
-    """Get obligations - remote KAT API validation failed."""
-
-    httpx_mock.add_response(json=s400_invalid_user_details, status_code=400)
-
-    resp = await KatApi().async_get_obligations(EGN, LICENSE)
+    resp = await KatApi().get_obligations(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.VALIDATION_ERROR
-
-
-@pytest.mark.asyncio
-async def test_get_obligations_api_down(
-    httpx_mock: HTTPXMock, s400_service_down: pytest.fixture
-) -> None:
-    """Get obligations - remote KAT API returns error."""
-
-    httpx_mock.add_response(json=s400_service_down, status_code=400)
-
-    resp = await KatApi().async_get_obligations(EGN, LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.API_UNAVAILABLE
-
-
-@pytest.mark.asyncio
-async def test_get_obligations_api_timeout(httpx_mock: HTTPXMock) -> None:
-    """Get obligations - remote KAT API timeout."""
-
-    httpx_mock.add_exception(httpx.TimeoutException(""))
-
-    resp = await KatApi().async_get_obligations(EGN, LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert resp.success is False
-    assert resp.data is None
-    assert resp.error_message is not None
-    assert resp.error_type is KatErrorType.TIMEOUT
-
+    assert len(resp) == 6
+    assert sum(o.is_served for o in resp) == 2
+    assert sum(o.amount for o in resp) == 600
 
 # endregion

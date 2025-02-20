@@ -23,36 +23,71 @@ def load_json(local_path: str):
         return json.load(fixture)
 
 
-@pytest.fixture(name="s200_no_obligations")
-def fixture_no_obligations():
+@pytest.fixture(name="ok_no_fines")
+def ok_no_fines():
     """No obligations JSON."""
 
-    return load_json("fixtures/200_no_obligations.json")
+    return load_json("fixtures\\ok_no_fines.json")
 
 
-@pytest.fixture(name="s200_has_non_handed_slip")
-def fixture_has_non_handed_slip():
-    """Has NON-HANDED obligations JSON."""
+@pytest.fixture(name="ok_fine_sample")
+def ok_fine_sample():
+    """No obligations JSON."""
 
-    return load_json("fixtures/200_has_non_handed_slip.json")
-
-
-@pytest.fixture(name="s200_has_handed_slip")
-def fixture_has_handed_slip():
-    """Has HANDED obligations JSON."""
-
-    return load_json("fixtures/200_has_handed_slip.json")
+    return load_json("fixtures\\ok_fine_sample.json")
 
 
-@pytest.fixture(name="s400_invalid_user_details")
-def fixture_invalid_user_details():
-    """Invalid user details JSON"""
+@pytest.fixture(name="ok_fine_served")
+def ok_fine_served():
+    """No obligations JSON."""
 
-    return load_json("fixtures/400_invalid_user_details.json")
+    return load_json("fixtures/ok_fine_served.json")
 
 
-@pytest.fixture(name="s400_service_down")
-def fixture_service_down():
-    """Website is down JSON"""
+@pytest.fixture(name="ok_fine_not_served")
+def ok_fine_not_served():
+    """No obligations JSON."""
 
-    return load_json("fixtures/400_service_down.json")
+    return load_json("fixtures/ok_fine_not_served.json")
+
+
+@pytest.fixture(name="err_apidown")
+def err_apidown():
+    """No obligations JSON."""
+
+    return load_json("fixtures/err_apidown.json")
+
+
+@pytest.fixture(name="err_nodatafound")
+def err_nodatafound():
+    """No obligations JSON."""
+
+    return load_json("fixtures/err_nodatafound.json")
+
+
+@pytest.fixture(name="ok_sample1_2fines")
+def ok_sample1_2fines():
+    """No obligations JSON."""
+
+    return load_json("fixtures/ok_sample1_2fines.json")
+
+
+@pytest.fixture(name="ok_sample2_6fines")
+def ok_sample2_6fines():
+    """No obligations JSON."""
+
+    return load_json("fixtures/ok_sample2_6fines.json")
+
+
+@pytest.fixture(name="ok_sample3_2fines")
+def ok_sample3_2fines():
+    """No obligations JSON."""
+
+    return load_json("fixtures/ok_sample3_2fines.json")
+
+
+@pytest.fixture(name="ok_sample4_1fine")
+def ok_sample4_1fine():
+    """No obligations JSON."""
+
+    return load_json("fixtures/ok_sample4_1fine.json")
