@@ -20,9 +20,11 @@ The reason this library is needed is because the government website is highly un
 pip install kat_bulgaria
 ```
 
-## Example:
+## Example usage:
 
 ```python
+import asyncio
+
 from kat_bulgaria.kat_api_client import (
     KatApiClient, KatError, KatErrorType
 )
@@ -82,8 +84,8 @@ async def sample_code():
         ):
             print("Unable to connect to KAT API")
 
-sample_code()
-
+# Run the async function
+asyncio.run(sample_code())
 ```
 
 ## Known raw API responses:
