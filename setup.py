@@ -7,7 +7,7 @@ long_description = Path("README.md").read_text("utf-8")
 
 setup(
     name="kat_bulgaria",
-    version="0.8.0",
+    version="0.8.1",
     description="A library to check for existing obligations from KAT Bulgaria",
     long_description=long_description,
     long_description_content_type="text/markdown",
