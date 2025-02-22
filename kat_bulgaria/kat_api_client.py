@@ -2,6 +2,7 @@
 
 import re
 import httpx
+from httpx import AsyncClient
 
 from .errors import KatError, KatErrorType
 from .data_models import KatObligationApiResponse, KatObligation
@@ -49,7 +50,7 @@ class KatApiClient:
                 raise KatError(KatErrorType.API_ERROR_READING_DATA, ERR_API_DOWN)
 
 
-    async def validate_credentials(self,  egn: str, license_number: str) -> bool:
+    async def validate_credentials(self,  egn: str, license_number: str, external_httpx_client: AsyncClient = None) -> bool:
         """
         Validates the combination of EGN and License number for a person
 
@@ -59,13 +60,13 @@ class KatApiClient:
         """
 
         self.__validate_credentials_local(egn, license_number)
-        data = await self.get_obligations(egn, license_number)
+        data = await self.get_obligations(egn, license_number, external_httpx_client)
 
         return data is not None
 
 
     async def get_obligations(
-        self, egn: str, license_number: str
+        self, egn: str, license_number: str, external_httpx_client: AsyncClient = None
     ) -> list[KatObligation]:
         """
         Gets a list of obligations/fines for the person
@@ -79,10 +80,15 @@ class KatApiClient:
         try:
             url = _KAT_OBLIGATIONS_URL.format(egn=egn, license_number=license_number)
 
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(url, timeout=_REQUEST_TIMEOUT)
+            if external_httpx_client:
+                resp = await external_httpx_client.get(url, timeout=_REQUEST_TIMEOUT)
                 data = resp.json()
                 resp.raise_for_status()
+            else:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, timeout=_REQUEST_TIMEOUT)
+                    data = resp.json()
+                    resp.raise_for_status()
 
         except httpx.TimeoutException as ex_timeout:
             raise KatError(KatErrorType.API_TIMEOUT, ERR_API_TIMEOUT.format(license_number=license_number)) from ex_timeout
