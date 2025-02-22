@@ -24,6 +24,12 @@
 
 [Tutorial link](https://medium.com/analytics-vidhya/how-to-create-a-python-library-7d5aea80cc3f)
 
+### Upload package prerequisites:
+
+`pip install wheel`
+
+`pip install twine`
+
 ### Upload package:
 
 `python3 setup.py bdist_wheel`
