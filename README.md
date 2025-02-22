@@ -23,8 +23,8 @@ pip install kat_bulgaria
 ## Example:
 
 ```python
-from kat_bulgaria.obligations import (
-    KatApi, KatError, KatErrorType
+from kat_bulgaria.kat_api_client import (
+    KatApiClient, KatError, KatErrorType
 )
 
 EGN = "0011223344"
@@ -36,11 +36,11 @@ async def sample_code():
 
     try:
         # Validates EGN and Driver License Number locally and with the API.
-        is_valid = await KatApi().validate_credentials(EGN, LICENSE_NUMBER)
+        is_valid = await KatApiClient().validate_credentials(EGN, LICENSE_NUMBER)
         print(f"Valid: {is_valid}\n")
 
         # Checks if a person has obligations, returns true or false.
-        obligations = await api.get_obligations(EGN, LICENSE_NUMBER)
+        obligations = await KatApiClient().get_obligations(EGN, LICENSE_NUMBER)
         print(f"Obligation Count: {len(obligations)}\n")
         print(f"Raw: {obligations}\n")
 
@@ -50,32 +50,37 @@ async def sample_code():
         print(f"Error Type: {err.error_type}\n")
         print(f"Error Message: {err.error_message}")
 
-        match err.error_type:
-            case KatErrorType.VALIDATION_EGN_INVALID:
-                # Regex validation for EGN failed.
+        if err.error_type in (
+            # Regex validation for EGN failed.
+            KatErrorType.VALIDATION_EGN_INVALID,
 
-            case KatErrorType.VALIDATION_LICENSE_INVALID:
-                # Regex validation for Driving License failed.
+            # Regex validation for Driving License failed.
+            KatErrorType.VALIDATION_LICENSE_INVALID,
 
-            case KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE:
-                # KAT API returned an error because the EGN/License combination was not found.
+            # KAT API returned an error because the EGN/License combination was not found.
+            KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
+        ):
+            print("Invalid user input")
 
-            case KatErrorType.API_TIMEOUT:
-                # KAT API is slow. Happens couple of times per day.
-                # Retry or wait for some time to pass.
+        if err.error_type in (
+            # KAT API is slow. Happens couple of times per day.
+            # Retry or wait for some time to pass.
+            KatErrorType.API_TIMEOUT,
 
-            case KatErrorType.API_ERROR_READING_DATA:
-                # KAT API has pooped its pants and is unable to do anything.
-                # That happens sometimes, either retry or wait for a bit.
+            # KAT API has pooped its pants and is unable to do anything.
+            # That happens sometimes, either retry or wait for a bit.
+            KatErrorType.API_ERROR_READING_DATA,
 
-            case KatErrorType.API_UNKNOWN_ERROR:
-                # KAT API returned a non-200 status code. Should never happen.
-                # If it happens - open an issue and attach the response of the body.
+            # KAT API returned a non-200 status code. Should never happen.
+            # If it happens - open an issue and attach the response of the body.
+            KatErrorType.API_UNKNOWN_ERROR,
 
-            case KatErrorType.API_INVALID_SCHEMA:
-                # KAT API returned response with a new schema.
-                # Indicates the API has been updated and I should update this package.
-                # Open an issue if you encounter this.
+            # KAT API returned response with a new schema.
+            # Indicates the API has been updated and I should update this package.
+            # Open an issue if you encounter this.
+            KatErrorType.API_INVALID_SCHEMA,
+        ):
+            print("Unable to connect to KAT API")
 
 sample_code()
 
