@@ -32,7 +32,7 @@ async def test_verify_credentials_success(
 
     resp = await KatApiClient().validate_credentials(EGN, LICENSE)
 
-    assert len(httpx_mock.get_requests()) == 0
+    assert len(httpx_mock.get_requests()) == 1
     assert resp is True
 
 
