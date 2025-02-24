@@ -9,7 +9,6 @@ from kat_bulgaria.kat_api_client import (
     KatApiClient,
     KatError,
     KatErrorType,
-    KatObligation,
     ERR_INVALID_EGN,
     ERR_INVALID_LICENSE,
     ERR_INVALID_USER_DATA,
