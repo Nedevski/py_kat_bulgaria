@@ -1,0 +1,20 @@
+[project]
+name = "kat_bulgaria"
+version = "0.8.4"
+description = "A library to check for existing obligations from KAT Bulgaria"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "Nikola Nedevski", email = "nikola.nedevski@gmail.com" }]
+keywords = ["kat", "mvr", "bulgaria"]
+dependencies = ["httpx"]
+
+[project.urls]
+homepage = "https://github.com/Nedevski/py_kat_bulgaria"
+issues = "https://github.com/Nedevski/py_kat_bulgaria/issues"
+repository = "https://github.com/Nedevski/py_kat_bulgaria.git"
+donate = "https://ko-fi.com/nedevski/tip"
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools", "wheel"]
