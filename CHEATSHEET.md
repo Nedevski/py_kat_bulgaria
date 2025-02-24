@@ -16,7 +16,7 @@
 
 ### Run tests:
 
-`python3 setup.py pytest`
+`python -m pytest tests`
 
 ---
 
