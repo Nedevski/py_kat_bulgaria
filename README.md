@@ -20,8 +20,6 @@ If you like my work, please consider donating
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/nedevski/tip)
 
----
-
 ## Installation
 
 ```shell
