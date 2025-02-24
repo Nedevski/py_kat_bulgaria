@@ -27,14 +27,14 @@ def load_json(local_path: str):
 def ok_no_fines():
     """No obligations JSON."""
 
-    return load_json("fixtures\\ok_no_fines.json")
+    return load_json("fixtures/ok_no_fines.json")
 
 
 @pytest.fixture(name="ok_fine_sample")
 def ok_fine_sample():
     """No obligations JSON."""
 
-    return load_json("fixtures\\ok_fine_sample.json")
+    return load_json("fixtures/ok_fine_sample.json")
 
 
 @pytest.fixture(name="ok_fine_served")
