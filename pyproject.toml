@@ -10,10 +10,10 @@ keywords = ["kat", "mvr", "bulgaria"]
 dependencies = ["httpx"]
 
 [project.urls]
-homepage = "https://github.com/Nedevski/py_kat_bulgaria"
-issues = "https://github.com/Nedevski/py_kat_bulgaria/issues"
-repository = "https://github.com/Nedevski/py_kat_bulgaria.git"
-donate = "https://ko-fi.com/nedevski/tip"
+Homepage = "https://github.com/Nedevski/py_kat_bulgaria"
+Issues = "https://github.com/Nedevski/py_kat_bulgaria/issues"
+Repository = "https://github.com/Nedevski/py_kat_bulgaria.git"
+Donate = "https://ko-fi.com/nedevski/tip"
 
 [build-system]
 build-backend = "setuptools.build_meta"
