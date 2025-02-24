@@ -14,6 +14,14 @@ It does **NOT** save or log your data anywhere and it works with a single API en
 
 The reason this library is needed is because the government website is highly unstable and often throws random errors and Timeouts. This library handles all known bad responses (as of the time of writing) and provides a meaningful error message and an error code for every request.
 
+---
+
+If you like my work, please consider donating
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/nedevski/tip)
+
+---
+
 ## Installation
 
 ```shell
