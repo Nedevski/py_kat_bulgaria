@@ -1,9 +1,9 @@
 [project]
 name = "kat_bulgaria"
-version = "1.0.1"
+version = "1.0.2"
 description = "A library to check for existing obligations from KAT Bulgaria"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Nikola Nedevski", email = "nikola.nedevski@gmail.com" }]
 keywords = ["kat", "mvr", "bulgaria"]
