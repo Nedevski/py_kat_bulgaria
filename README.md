@@ -2,7 +2,7 @@
 
 [![PyPI Link](https://img.shields.io/pypi/v/kat_bulgaria?style=flat-square)](https://pypi.org/project/kat-bulgaria/)
 ![Last release](https://img.shields.io/github/release-date/nedevski/py_kat_bulgaria?style=flat-square)
-![PyPI License](https://img.shields.io/pypi/l/kat_bulgaria?style=flat-square)
+![License](https://img.shields.io/github/license/nedevski/py_kat_bulgaria?style=flat-square)
 ![PyPI Downloads](https://img.shields.io/pypi/dm/kat_bulgaria?style=flat-square)
 ![Code size](https://img.shields.io/github/languages/code-size/nedevski/py_kat_bulgaria?style=flat-square)
 
