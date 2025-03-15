@@ -1,5 +1,6 @@
 """Obligations module"""
 
+from json import JSONDecodeError
 import re
 import httpx
 from httpx import AsyncClient
@@ -88,22 +89,22 @@ class KatApiClient:
             else:
                 async with httpx.AsyncClient() as client:
                     resp = await client.get(url, timeout=_REQUEST_TIMEOUT)
-                    
+
                     resp.raise_for_status()
+
+                    if (resp.headers.get("content-type") == "text/html" and "Достигнат е максимално допустимият брой заявки към системата" in resp.text):
+                        raise KatError(KatErrorType.API_TOO_MANY_REQUESTS, ERR_API_TOO_MANY_REQUESTS.format(license_number=license_number))
+
                     data = resp.json()
 
         except httpx.TimeoutException as ex_timeout:
             raise KatError(KatErrorType.API_TIMEOUT, ERR_API_TIMEOUT.format(license_number=license_number)) from ex_timeout
-        
-        except httpx.HTTPStatusError as ex_apierror:
-            if (ex_apierror.response.status_code == 429):
-                raise KatError(KatErrorType.API_TOO_MANY_REQUESTS, ERR_API_TOO_MANY_REQUESTS.format(license_number=license_number)) from ex_apierror
-            else:
-                raise KatError(KatErrorType.API_UNKNOWN_ERROR, ERR_API_UNKNOWN.format(error=str(ex_apierror))) from ex_apierror
-                
+
         except httpx.HTTPError as ex_apierror:
             raise KatError(KatErrorType.API_UNKNOWN_ERROR, ERR_API_UNKNOWN.format(error=str(ex_apierror))) from ex_apierror
 
+        except JSONDecodeError as ex_decode_err:
+            raise KatError(KatErrorType.API_UNKNOWN_ERROR, ERR_API_MALFORMED_RESP.format(data=str(ex_decode_err))) from ex_decode_err
 
         if "obligationsData" not in data:
             # This should never happen.

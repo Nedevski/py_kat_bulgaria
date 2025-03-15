@@ -79,27 +79,6 @@ async def test_verify_credentials_api_invalid_user_data_sent(
 
 
 @pytest.mark.asyncio
-async def test_verify_credentials_api_too_many_requests(httpx_mock: HTTPXMock) -> None:
-    """Verify credentials - remote KAT API timeout."""
-
-    ex = httpx.HTTPStatusError(
-        "",
-        request=httpx.Request("GET", ""),
-        response=httpx.Response(429)
-    )
-
-    httpx_mock.add_exception(ex)
-
-    with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(EGN, LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
-    assert "too many requests" in ctx.value.error_message
-
-
-@pytest.mark.asyncio
 async def test_verify_credentials_api_timeout(httpx_mock: HTTPXMock) -> None:
     """Verify credentials - remote KAT API timeout."""
 
@@ -147,6 +126,39 @@ async def test_verify_credentials_non_success_status_code(
     assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
     assert "unknown error" in ctx.value.error_message
 
+
+@pytest.mark.asyncio
+async def test_verify_credentials_api_html_returned(
+    httpx_mock: HTTPXMock, err_random_html: pytest.fixture
+)-> None:
+    """Check obligations - html returned."""
+
+    httpx_mock.add_response(status_code=200, html=err_random_html, headers={'content-type': 'text/html'})
+
+    with pytest.raises(KatError) as ctx:
+        await KatApiClient().validate_credentials(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert "malformed response" in ctx.value.error_message
+
+
+@pytest.mark.asyncio
+async def test_verify_credentials_api_too_many_requests(
+    httpx_mock: HTTPXMock, err_too_many_requests: pytest.fixture
+)-> None:
+    """Check obligations - too many requests."""
+
+    httpx_mock.add_response(status_code=200, html=err_too_many_requests, headers={'content-type': 'text/html'})
+
+    with pytest.raises(KatError) as ctx:
+        await KatApiClient().validate_credentials(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
+    assert "too many requests" in ctx.value.error_message
 
 # endregion
 
@@ -246,27 +258,6 @@ async def test_check_obligations_invalid_user_data_sent(
 
 
 @pytest.mark.asyncio
-async def test_check_obligations_api_too_many_requests(httpx_mock: HTTPXMock) -> None:
-    """Verify credentials - remote KAT API timeout."""
-
-    ex = httpx.HTTPStatusError(
-        "",
-        request=httpx.Request("GET", ""),
-        response=httpx.Response(429)
-    )
-
-    httpx_mock.add_exception(ex)
-
-    with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations(EGN, LICENSE)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
-    assert "too many requests" in ctx.value.error_message
-
-
-@pytest.mark.asyncio
 async def test_check_obligations_api_timeout(httpx_mock: HTTPXMock) -> None:
     """Check obligations - remote KAT API timeout."""
 
@@ -329,5 +320,39 @@ async def test_check_obligations_sample2(
     assert len(resp) == 6
     assert sum(o.is_served for o in resp) == 2
     assert sum(o.amount for o in resp) == 600
+
+
+@pytest.mark.asyncio
+async def test_check_obligations_api_html_returned(
+    httpx_mock: HTTPXMock, err_random_html: pytest.fixture
+)-> None:
+    """Check obligations - html returned."""
+
+    httpx_mock.add_response(status_code=200, html=err_random_html, headers={'content-type': 'text/html'})
+
+    with pytest.raises(KatError) as ctx:
+        await KatApiClient().get_obligations(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert "malformed response" in ctx.value.error_message
+
+
+@pytest.mark.asyncio
+async def test_check_obligations_api_too_many_requests(
+    httpx_mock: HTTPXMock, err_too_many_requests: pytest.fixture
+)-> None:
+    """Check obligations - too many requests."""
+
+    httpx_mock.add_response(status_code=200, html=err_too_many_requests, headers={'content-type': 'text/html'})
+
+    with pytest.raises(KatError) as ctx:
+        await KatApiClient().get_obligations(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
+    assert "too many requests" in ctx.value.error_message
 
 # endregion
