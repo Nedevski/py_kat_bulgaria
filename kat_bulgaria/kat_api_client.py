@@ -14,6 +14,7 @@ ERR_INVALID_EGN = "EGN is not valid."
 ERR_INVALID_LICENSE = "Driving License Number is not valid."
 ERR_INVALID_USER_DATA = "User data (EGN and Driving license number combination) is not valid."
 
+ERR_API_TOO_MANY_REQUESTS = "KAT API too many requests for {license_number}"
 ERR_API_TIMEOUT = "KAT API request timed out for {license_number}"
 ERR_API_DOWN = "KAT API was unable to process the request. Try again later."
 ERR_API_MALFORMED_RESP = " KAT API returned a malformed response: {data}"
@@ -87,12 +88,19 @@ class KatApiClient:
             else:
                 async with httpx.AsyncClient() as client:
                     resp = await client.get(url, timeout=_REQUEST_TIMEOUT)
-                    data = resp.json()
+                    
                     resp.raise_for_status()
+                    data = resp.json()
 
         except httpx.TimeoutException as ex_timeout:
             raise KatError(KatErrorType.API_TIMEOUT, ERR_API_TIMEOUT.format(license_number=license_number)) from ex_timeout
-
+        
+        except httpx.HTTPStatusError as ex_apierror:
+            if (ex_apierror.response.status_code == 429):
+                raise KatError(KatErrorType.API_TOO_MANY_REQUESTS, ERR_API_TOO_MANY_REQUESTS.format(license_number=license_number)) from ex_apierror
+            else:
+                raise KatError(KatErrorType.API_UNKNOWN_ERROR, ERR_API_UNKNOWN.format(error=str(ex_apierror))) from ex_apierror
+                
         except httpx.HTTPError as ex_apierror:
             raise KatError(KatErrorType.API_UNKNOWN_ERROR, ERR_API_UNKNOWN.format(error=str(ex_apierror))) from ex_apierror
 

@@ -79,6 +79,27 @@ async def test_verify_credentials_api_invalid_user_data_sent(
 
 
 @pytest.mark.asyncio
+async def test_verify_credentials_api_too_many_requests(httpx_mock: HTTPXMock) -> None:
+    """Verify credentials - remote KAT API timeout."""
+
+    ex = httpx.HTTPStatusError(
+        "",
+        request=httpx.Request("GET", ""),
+        response=httpx.Response(429)
+    )
+
+    httpx_mock.add_exception(ex)
+
+    with pytest.raises(KatError) as ctx:
+        await KatApiClient().validate_credentials(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
+    assert "too many requests" in ctx.value.error_message
+
+
+@pytest.mark.asyncio
 async def test_verify_credentials_api_timeout(httpx_mock: HTTPXMock) -> None:
     """Verify credentials - remote KAT API timeout."""
 
@@ -222,6 +243,27 @@ async def test_check_obligations_invalid_user_data_sent(
     assert isinstance(ctx.value, KatError)
     assert ctx.value.error_type == KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
     assert ctx.value.error_message == ERR_INVALID_USER_DATA
+
+
+@pytest.mark.asyncio
+async def test_check_obligations_api_too_many_requests(httpx_mock: HTTPXMock) -> None:
+    """Verify credentials - remote KAT API timeout."""
+
+    ex = httpx.HTTPStatusError(
+        "",
+        request=httpx.Request("GET", ""),
+        response=httpx.Response(429)
+    )
+
+    httpx_mock.add_exception(ex)
+
+    with pytest.raises(KatError) as ctx:
+        await KatApiClient().get_obligations(EGN, LICENSE)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
+    assert "too many requests" in ctx.value.error_message
 
 
 @pytest.mark.asyncio
