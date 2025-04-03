@@ -30,6 +30,7 @@ REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
 
 # Supports "123456789" and "AA1234567"
 REGEX_GOVT_ID = r"^[0-9]{9}|[A-Z]{2}[0-9]{7}$"
+REGEX_BULSTAT = r"^[0-9]{9}|[A-Z]{2}[0-9]{7}$"
 
 
 class KatApiClient:
