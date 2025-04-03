@@ -28,9 +28,9 @@ ERR_API_UNKNOWN = "KAT API returned an unknown error: {error}"
 REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
 
-# Supports "123456789" and "AA1234567"
+# ID Format Supports "123456789" and "AA1234567"
 REGEX_GOVT_ID = r"^[0-9]{9}|[A-Z]{2}[0-9]{7}$"
-REGEX_BULSTAT = r"^[0-9]{9}|[A-Z]{2}[0-9]{7}$"
+REGEX_BULSTAT = r"^[0-9]{9}$"
 
 
 class KatApiClient:
@@ -158,10 +158,15 @@ class KatApiClient:
             raise KatError(KatErrorType.VALIDATION_EGN_INVALID,
                            ERR_INVALID_EGN)
 
-        # Validate License Number
+        # Validate Government ID Number
         if govt_id_number is None or re.search(REGEX_GOVT_ID, govt_id_number) is None:
             raise KatError(
                 KatErrorType.VALIDATION_ID_DOCUMENT_INVALID, ERR_INVALID_GOV_ID)
+
+        # Validate BULSTAT
+        if govt_id_number is None or re.search(REGEX_BULSTAT, bulstat) is None:
+            raise KatError(
+                KatErrorType.VALIDATION_ID_DOCUMENT_INVALID, ERR_INVALID_BULSTAT)
 
         data = await self.get_obligations_business(egn, govt_id_number, bulstat, external_httpx_client)
 
