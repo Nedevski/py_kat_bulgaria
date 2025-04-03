@@ -31,27 +31,43 @@ pip install kat_bulgaria
 ## Example usage:
 
 ```python
+"""Sample usage script."""
+
 import asyncio
 
-from kat_bulgaria.kat_api_client import (
-    KatApiClient, KatError, KatErrorType
-)
+from kat_bulgaria.kat_api_client import KatApiClient
+from kat_bulgaria.errors import KatError, KatErrorType
 
-EGN = "0011223344"
-LICENSE_NUMBER = "123456789"
+INDIVIDUAL_EGN = "0011223344"
+INDIVIDUAL_DRIVER_LICENSE = "123456789"
+
+BUSINESS_OWNER_EGN = "0011223344"
+BUSINESS_OWNER_GOVT_ID = "AA1234567"
+BUSINESS_BULSTAT = "123456789"
 
 
 async def sample_code():
     """Validates credentials"""
 
     try:
+        # For individuals:
         # Validates EGN and Driver License Number locally and with the API.
-        is_valid = await KatApiClient().validate_credentials(EGN, LICENSE_NUMBER)
-        print(f"Valid: {is_valid}\n")
+        is_valid = await KatApiClient().validate_credentials_individual(INDIVIDUAL_EGN, INDIVIDUAL_DRIVER_LICENSE)
+        print(f"Individual Credentials Valid: {is_valid}\n")
 
-        # Checks if a person has obligations, returns true or false.
-        obligations = await KatApiClient().get_obligations(EGN, LICENSE_NUMBER)
-        print(f"Obligation Count: {len(obligations)}\n")
+        # Checks if an individual has obligations, returns true or false.
+        obligations = await KatApiClient().get_obligations_individual(INDIVIDUAL_EGN, INDIVIDUAL_DRIVER_LICENSE)
+        print(f"Individual Obligation Count: {len(obligations)}\n")
+        print(f"Raw: {obligations}\n")
+
+        # For businesses:
+        # Validates EGN, Government ID and BULSTAT locally and with the API.
+        is_valid = await KatApiClient().validate_credentials_business(BUSINESS_OWNER_EGN, BUSINESS_OWNER_GOVT_ID, BUSINESS_BULSTAT)
+        print(f"Business Credentials Valid: {is_valid}\n")
+
+        # Checks if an individual has obligations, returns true or false.
+        obligations = await KatApiClient().get_obligations_business(BUSINESS_OWNER_EGN, BUSINESS_OWNER_GOVT_ID, BUSINESS_BULSTAT)
+        print(f"Business Obligation Count: {len(obligations)}\n")
         print(f"Raw: {obligations}\n")
 
     except KatError as err:
@@ -65,7 +81,7 @@ async def sample_code():
             KatErrorType.VALIDATION_EGN_INVALID,
 
             # Regex validation for Driving License failed.
-            KatErrorType.VALIDATION_LICENSE_INVALID,
+            KatErrorType.VALIDATION_ID_DOCUMENT_INVALID,
 
             # KAT API returned an error because the EGN/License combination was not found.
             KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
