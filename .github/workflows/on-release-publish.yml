@@ -8,12 +8,17 @@ on:
   release:
     types: [published]
 
+env:
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+
 jobs:
   release-build:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH_NAME }}
 
       - uses: actions/setup-python@v5
         with:
@@ -24,6 +29,12 @@ jobs:
           # NOTE: put your own distribution build steps here.
           python -m pip install build
           python -m build
+
+      - name: Run tests with pytest
+        run: |
+          pip install pytest pytest-cov
+          pip install -r requirements-test.txt
+          python -m pytest tests
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4

@@ -29,7 +29,7 @@ async def test_verify_credentials_success(
 
     httpx_mock.add_response(json=ok_no_fines)
 
-    resp = await KatApiClient().validate_credentials(EGN, LICENSE)
+    resp = await KatApiClient().validate_credentials_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert resp is True
@@ -40,7 +40,7 @@ async def test_verify_credentials_local_invalid_egn(httpx_mock: HTTPXMock) -> No
     """Verify credentials - local EGN validation failed."""
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(INVALID_EGN, LICENSE)
+        await KatApiClient().validate_credentials_individual(INVALID_EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
@@ -53,11 +53,11 @@ async def test_verify_credentials_local_invalid_driver_license(httpx_mock: HTTPX
     """Verify credentials - local Driver License validation failed."""
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(EGN, INVALID_LICENSE)
+        await KatApiClient().validate_credentials_individual(EGN, INVALID_LICENSE)
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_LICENSE_INVALID
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ID_DOCUMENT_INVALID
     assert ctx.value.error_message == ERR_INVALID_LICENSE
 
 
@@ -70,7 +70,7 @@ async def test_verify_credentials_api_invalid_user_data_sent(
     httpx_mock.add_response(json=err_nodatafound, status_code=200)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(EGN, LICENSE)
+        await KatApiClient().validate_credentials_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -85,7 +85,7 @@ async def test_verify_credentials_api_timeout(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_exception(httpx.TimeoutException(""))
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(EGN, LICENSE)
+        await KatApiClient().validate_credentials_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -102,7 +102,7 @@ async def test_verify_credentials_api_down(
     httpx_mock.add_response(json=err_apidown, status_code=200)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(EGN, LICENSE)
+        await KatApiClient().validate_credentials_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -119,7 +119,7 @@ async def test_verify_credentials_non_success_status_code(
     httpx_mock.add_response(json=ok_no_fines, status_code=400)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(EGN, LICENSE)
+        await KatApiClient().validate_credentials_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -130,13 +130,14 @@ async def test_verify_credentials_non_success_status_code(
 @pytest.mark.asyncio
 async def test_verify_credentials_api_html_returned(
     httpx_mock: HTTPXMock, err_random_html: pytest.fixture
-)-> None:
+) -> None:
     """Check obligations - html returned."""
 
-    httpx_mock.add_response(status_code=200, html=err_random_html, headers={'content-type': 'text/html'})
+    httpx_mock.add_response(status_code=200, html=err_random_html, headers={
+                            'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(EGN, LICENSE)
+        await KatApiClient().validate_credentials_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -147,13 +148,14 @@ async def test_verify_credentials_api_html_returned(
 @pytest.mark.asyncio
 async def test_verify_credentials_api_too_many_requests(
     httpx_mock: HTTPXMock, err_too_many_requests: pytest.fixture
-)-> None:
+) -> None:
     """Check obligations - too many requests."""
 
-    httpx_mock.add_response(status_code=200, html=err_too_many_requests, headers={'content-type': 'text/html'})
+    httpx_mock.add_response(status_code=200, html=err_too_many_requests, headers={
+                            'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials(EGN, LICENSE)
+        await KatApiClient().validate_credentials_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -174,7 +176,7 @@ async def test_check_obligations_no_fines(
 
     httpx_mock.add_response(json=ok_no_fines)
 
-    resp = await KatApiClient().get_obligations(EGN, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 0
@@ -188,13 +190,13 @@ async def test_check_obligations_field_mapping_success(
 
     httpx_mock.add_response(json=ok_fine_served)
 
-    resp = await KatApiClient().get_obligations(EGN, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
-    
+
     obligation = resp[0]
-    
+
     assert obligation.unit_group == 1
     assert obligation.status == 0
     assert obligation.amount == 100
@@ -218,7 +220,7 @@ async def test_check_obligations_has_served(
 
     httpx_mock.add_response(json=ok_fine_served)
 
-    resp = await KatApiClient().get_obligations(EGN, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
@@ -233,7 +235,7 @@ async def test_check_obligations_has_not_served(
 
     httpx_mock.add_response(json=ok_fine_not_served)
 
-    resp = await KatApiClient().get_obligations(EGN, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
@@ -249,7 +251,7 @@ async def test_check_obligations_invalid_user_data_sent(
     httpx_mock.add_response(json=err_nodatafound)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations(EGN, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -264,7 +266,7 @@ async def test_check_obligations_api_timeout(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_exception(httpx.TimeoutException(""))
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations(EGN, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -281,7 +283,7 @@ async def test_check_obligations_api_down(
     httpx_mock.add_response(json=err_apidown, status_code=200)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations(EGN, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -298,7 +300,7 @@ async def test_check_obligations_non_success_status_code(
     httpx_mock.add_response(json=ok_no_fines, status_code=400)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations(EGN, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -314,7 +316,7 @@ async def test_check_obligations_sample2(
 
     httpx_mock.add_response(json=ok_sample2_6fines)
 
-    resp = await KatApiClient().get_obligations(EGN, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 6
@@ -325,13 +327,14 @@ async def test_check_obligations_sample2(
 @pytest.mark.asyncio
 async def test_check_obligations_api_html_returned(
     httpx_mock: HTTPXMock, err_random_html: pytest.fixture
-)-> None:
+) -> None:
     """Check obligations - html returned."""
 
-    httpx_mock.add_response(status_code=200, html=err_random_html, headers={'content-type': 'text/html'})
+    httpx_mock.add_response(status_code=200, html=err_random_html, headers={
+                            'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations(EGN, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -342,13 +345,14 @@ async def test_check_obligations_api_html_returned(
 @pytest.mark.asyncio
 async def test_check_obligations_api_too_many_requests(
     httpx_mock: HTTPXMock, err_too_many_requests: pytest.fixture
-)-> None:
+) -> None:
     """Check obligations - too many requests."""
 
-    httpx_mock.add_response(status_code=200, html=err_too_many_requests, headers={'content-type': 'text/html'})
+    httpx_mock.add_response(status_code=200, html=err_too_many_requests, headers={
+                            'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations(EGN, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
