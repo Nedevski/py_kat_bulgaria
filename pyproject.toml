@@ -1,6 +1,6 @@
 [project]
 name = "kat_bulgaria"
-version = "2.0.0b0"
+version = "2.0.0b7"
 description = "A library to check for existing obligations from KAT Bulgaria"
 readme = "README.md"
 license = { text = "MIT" }
