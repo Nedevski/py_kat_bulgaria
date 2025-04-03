@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from .helpers import strtobool
 
+
 @dataclass
 class KatObligation:
     """Single obligation model."""
@@ -29,11 +30,13 @@ class KatObligation:
         self.status = obligation["status"]
         self.amount = obligation["amount"]
         self.discount_amount = obligation["discountAmount"]
-        self.discount_percentage = int(obligation["additionalData"]["discount"])
+        self.discount_percentage = int(
+            obligation["additionalData"]["discount"])
         self.description = obligation["paymentReason"]
 
         if "isServed" in obligation["additionalData"]:
-            self.is_served = strtobool(obligation["additionalData"]["isServed"])
+            self.is_served = strtobool(
+                obligation["additionalData"]["isServed"])
         else:
             self.is_served = False
 
@@ -43,6 +46,7 @@ class KatObligation:
         self.document_series = obligation["additionalData"]["documentSeries"]
         self.document_number = obligation["additionalData"]["documentNumber"]
         self.breach_of_order = obligation["additionalData"]["breachOfOrder"]
+
 
 @dataclass
 class KatObligationUnitGroup:

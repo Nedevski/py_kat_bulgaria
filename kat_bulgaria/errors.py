@@ -2,17 +2,19 @@
 
 from enum import Enum
 
+
 class KatErrorType(Enum):
     """Different KAT api error types"""
 
     VALIDATION_EGN_INVALID = 1
-    VALIDATION_LICENSE_INVALID = 2
+    VALIDATION_ID_DOCUMENT_INVALID = 2
     VALIDATION_USER_NOT_FOUND_ONLINE = 3
     API_TOO_MANY_REQUESTS = 5
     API_ERROR_READING_DATA = 6
     API_UNKNOWN_ERROR = 7
     API_TIMEOUT = 8
     API_INVALID_SCHEMA = 9
+
 
 class KatError(Exception):
     """Error wrapper"""

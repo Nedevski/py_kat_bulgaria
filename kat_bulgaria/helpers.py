@@ -1,5 +1,6 @@
 """Helper functions"""
 
+
 def strtobool(value: str) -> bool:
     """Checks if string is truthy"""
     lowered = value.lower()
