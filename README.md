@@ -96,6 +96,10 @@ async def sample_code():
 asyncio.run(sample_code())
 ```
 
+### Trying something
+
+https://github.com/Nedevski/py_kat_bulgaria/blob/add-support-for-businesses/sample_usage_script.py
+
 ## Known raw API responses:
 
 You can find sample API responses in `/tests/fixtures`.
