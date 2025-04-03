@@ -40,63 +40,63 @@ def ok_no_fines():
 
 @pytest.fixture(name="ok_fine_sample")
 def ok_fine_sample():
-    """No obligations JSON."""
+    """Sample fine JSON."""
 
     return load_json("fixtures/ok_fine_sample.json")
 
 
 @pytest.fixture(name="ok_fine_served")
 def ok_fine_served():
-    """No obligations JSON."""
+    """One served fine JSON."""
 
     return load_json("fixtures/ok_fine_served.json")
 
 
 @pytest.fixture(name="ok_fine_not_served")
 def ok_fine_not_served():
-    """No obligations JSON."""
+    """One non-served fine JSON."""
 
     return load_json("fixtures/ok_fine_not_served.json")
 
 
 @pytest.fixture(name="err_apidown")
 def err_apidown():
-    """No obligations JSON."""
+    """Error JSON - API not available."""
 
     return load_json("fixtures/err_apidown.json")
 
 
 @pytest.fixture(name="err_nodatafound")
 def err_nodatafound():
-    """No obligations JSON."""
+    """Error JSON - No data found for this user."""
 
     return load_json("fixtures/err_nodatafound.json")
 
 
 @pytest.fixture(name="ok_sample1_2fines")
 def ok_sample1_2fines():
-    """No obligations JSON."""
+    """Sample file with 2 fines."""
 
     return load_json("fixtures/ok_sample1_2fines.json")
 
 
 @pytest.fixture(name="ok_sample2_6fines")
 def ok_sample2_6fines():
-    """No obligations JSON."""
+    """Sample file with 6 fines."""
 
     return load_json("fixtures/ok_sample2_6fines.json")
 
 
 @pytest.fixture(name="ok_sample3_2fines")
 def ok_sample3_2fines():
-    """No obligations JSON."""
+    """Sample file with 2 fines."""
 
     return load_json("fixtures/ok_sample3_2fines.json")
 
 
 @pytest.fixture(name="ok_sample4_1fine")
 def ok_sample4_1fine():
-    """No obligations JSON."""
+    """Sample file with 4 fines."""
 
     return load_json("fixtures/ok_sample4_1fine.json")
 
