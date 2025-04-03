@@ -98,7 +98,7 @@ asyncio.run(sample_code())
 
 ### Trying something
 
-https://github.com/Nedevski/py_kat_bulgaria/blob/add-support-for-businesses/sample_usage_script.py
+https://github.com/Nedevski/py_kat_bulgaria/blob/add-support-for-businesses/sample_usage_script.py#L1-79
 
 ## Known raw API responses:
 
