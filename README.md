@@ -28,88 +28,34 @@ If you like my work, please consider donating
 pip install kat_bulgaria
 ```
 
-## Example usage:
+## Example usage script:
+
+For a full working sample usage script, check out [`sample_usage_script.py`](sample_usage_script.py).
+
+Remember to replace the dummy data in the constants with your own data.
 
 ```python
-"""Sample usage script."""
+# For individuals:
+# Validates EGN and Driver License Number locally and with the API.
+is_valid = await KatApiClient().validate_credentials_individual(EGN, DRIVER_LICENSE)
+print(f"Individual Credentials Valid: {is_valid}\n")
 
-import asyncio
+# Checks if an individual has obligations, returns true or false.
+obligations = await KatApiClient().get_obligations_individual(EGN, DRIVER_LICENSE)
+print(f"Individual Obligation Count: {len(obligations)}\n")
+print(f"Raw: {obligations}\n")
 
-from kat_bulgaria.kat_api_client import KatApiClient
-from kat_bulgaria.errors import KatError, KatErrorType
+################
 
-INDIVIDUAL_EGN = "0011223344"
-INDIVIDUAL_DRIVER_LICENSE = "123456789"
+# For businesses:
+# Validates EGN, Government ID and BULSTAT locally and with the API.
+is_valid = await KatApiClient().validate_credentials_business(EGN, GOVT_ID, BULSTAT)
+print(f"Business Credentials Valid: {is_valid}\n")
 
-BUSINESS_OWNER_EGN = "0011223344"
-BUSINESS_OWNER_GOVT_ID = "AA1234567"
-BUSINESS_BULSTAT = "123456789"
-
-
-async def sample_code():
-    """Validates credentials"""
-
-    try:
-        # For individuals:
-        # Validates EGN and Driver License Number locally and with the API.
-        is_valid = await KatApiClient().validate_credentials_individual(INDIVIDUAL_EGN, INDIVIDUAL_DRIVER_LICENSE)
-        print(f"Individual Credentials Valid: {is_valid}\n")
-
-        # Checks if an individual has obligations, returns true or false.
-        obligations = await KatApiClient().get_obligations_individual(INDIVIDUAL_EGN, INDIVIDUAL_DRIVER_LICENSE)
-        print(f"Individual Obligation Count: {len(obligations)}\n")
-        print(f"Raw: {obligations}\n")
-
-        # For businesses:
-        # Validates EGN, Government ID and BULSTAT locally and with the API.
-        is_valid = await KatApiClient().validate_credentials_business(BUSINESS_OWNER_EGN, BUSINESS_OWNER_GOVT_ID, BUSINESS_BULSTAT)
-        print(f"Business Credentials Valid: {is_valid}\n")
-
-        # Checks if an individual has obligations, returns true or false.
-        obligations = await KatApiClient().get_obligations_business(BUSINESS_OWNER_EGN, BUSINESS_OWNER_GOVT_ID, BUSINESS_BULSTAT)
-        print(f"Business Obligation Count: {len(obligations)}\n")
-        print(f"Raw: {obligations}\n")
-
-    except KatError as err:
-        # Code should throw only KatError.
-        # Open an issue if you encounter another exception type.
-        print(f"Error Type: {err.error_type}\n")
-        print(f"Error Message: {err.error_message}")
-
-        if err.error_type in (
-            # Regex validation for EGN failed.
-            KatErrorType.VALIDATION_EGN_INVALID,
-
-            # Regex validation for Driving License failed.
-            KatErrorType.VALIDATION_ID_DOCUMENT_INVALID,
-
-            # KAT API returned an error because the EGN/License combination was not found.
-            KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
-        ):
-            print("Invalid user input")
-
-        if err.error_type in (
-            # KAT API is slow. Happens couple of times per day.
-            # Retry or wait for some time to pass.
-            KatErrorType.API_TIMEOUT,
-
-            # KAT API has pooped its pants and is unable to do anything.
-            # That happens sometimes, either retry or wait for a bit.
-            KatErrorType.API_ERROR_READING_DATA,
-
-            # KAT API returned a non-200 status code. Should never happen.
-            # If it happens - open an issue and attach the response of the body.
-            KatErrorType.API_UNKNOWN_ERROR,
-
-            # KAT API returned response with a new schema.
-            # Indicates the API has been updated and I should update this package.
-            # Open an issue if you encounter this.
-            KatErrorType.API_INVALID_SCHEMA,
-        ):
-            print("Unable to connect to KAT API")
-
-# Run the async function
-asyncio.run(sample_code())
+# Checks if an individual has obligations, returns true or false.
+obligations = await KatApiClient().get_obligations_business(EGN, GOVT_ID, BULSTAT)
+print(f"Business Obligation Count: {len(obligations)}\n")
+print(f"Raw: {obligations}\n")
 ```
 
 ## Known raw API responses:
@@ -118,10 +64,10 @@ You can find sample API responses in `/tests/fixtures`.
 
 I also document all sample responses in [this issue](https://github.com/Nedevski/py_kat_bulgaria/issues/2) for clarity.
 
-If you have any fines, please add a comment to the issue above with the full API response.
+If you have any fines, I would appreciate it if you attach the full JSON API response as a comment to the issue above.
 
 You can get it by copying the url below and replacing EGN_GOES_HERE and LICENSE_GOES_HERE with your own data, then loading it in a browser.
 
 https://e-uslugi.mvr.bg/api/Obligations/AND?obligatedPersonType=1&additinalDataForObligatedPersonType=1&mode=1&obligedPersonIdent=EGN_GOES_HERE&drivingLicenceNumber=LICENSE_GOES_HERE
 
-Feel free to remove any personal data in the strings, but try not to modify the json structure.
+After that place the JSON in any text editor and remove personal data, but do not change the JSON structure itself.

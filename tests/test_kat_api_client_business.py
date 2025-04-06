@@ -9,15 +9,15 @@ from kat_bulgaria.kat_api_client import (
     KatApiClient,
     KatError,
     KatErrorType,
+    KatErrorSubtype,
     ERR_INVALID_EGN,
-    ERR_INVALID_LICENSE,
     ERR_INVALID_GOV_ID,
     ERR_INVALID_BULSTAT,
     ERR_INVALID_USER_DATA,
     ERR_API_DOWN
 )
 
-from .conftest import EGN, LICENSE, BULSTAT, INVALID_EGN, INVALID_LICENSE, INVALID_BULSTAT
+from .conftest import EGN, GOV_ID, BULSTAT, INVALID_EGN, INVALID_GOV_ID, INVALID_BULSTAT
 
 
 # region verify_credentials
@@ -31,7 +31,7 @@ async def test_verify_credentials_success(
 
     httpx_mock.add_response(json=ok_no_fines)
 
-    resp = await KatApiClient().validate_credentials_business(EGN, LICENSE, BULSTAT)
+    resp = await KatApiClient().validate_credentials_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert resp is True
@@ -42,24 +42,26 @@ async def test_verify_credentials_local_invalid_egn(httpx_mock: HTTPXMock) -> No
     """Verify credentials - local EGN validation failed."""
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(INVALID_EGN, LICENSE, BULSTAT)
+        await KatApiClient().validate_credentials_business(INVALID_EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_EGN_INVALID
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_EGN_INVALID
     assert ctx.value.error_message == ERR_INVALID_EGN
 
 
 @pytest.mark.asyncio
-async def test_verify_credentials_local_invalid_driver_license(httpx_mock: HTTPXMock) -> None:
-    """Verify credentials - local Driver License validation failed."""
+async def test_verify_credentials_local_invalid_gov_id_number(httpx_mock: HTTPXMock) -> None:
+    """Verify credentials - local government ID number validation failed."""
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(EGN, INVALID_LICENSE, BULSTAT)
+        await KatApiClient().validate_credentials_business(EGN, INVALID_GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_ID_DOCUMENT_INVALID
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_GOV_ID_NUMBER_INVALID
     assert ctx.value.error_message == ERR_INVALID_GOV_ID
 
 
@@ -68,11 +70,12 @@ async def test_verify_credentials_local_invalid_bulstat(httpx_mock: HTTPXMock) -
     """Verify credentials - local Driver License validation failed."""
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(EGN, LICENSE, INVALID_BULSTAT)
+        await KatApiClient().validate_credentials_business(EGN, GOV_ID, INVALID_BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_ID_DOCUMENT_INVALID
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_BULSTAT_INVALID
     assert ctx.value.error_message == ERR_INVALID_BULSTAT
 
 
@@ -85,11 +88,12 @@ async def test_verify_credentials_api_invalid_user_data_sent(
     httpx_mock.add_response(json=err_nodatafound, status_code=200)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().validate_credentials_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_USER_NOT_FOUND_ONLINE
     assert ctx.value.error_message == ERR_INVALID_USER_DATA
 
 
@@ -100,11 +104,12 @@ async def test_verify_credentials_api_timeout(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_exception(httpx.TimeoutException(""))
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().validate_credentials_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TIMEOUT
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_TIMEOUT
     assert "request timed out for" in ctx.value.error_message
 
 
@@ -117,11 +122,12 @@ async def test_verify_credentials_api_down(
     httpx_mock.add_response(json=err_apidown, status_code=200)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().validate_credentials_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_ERROR_READING_DATA
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_ERROR_READING_DATA
     assert ctx.value.error_message == ERR_API_DOWN
 
 
@@ -134,11 +140,12 @@ async def test_verify_credentials_non_success_status_code(
     httpx_mock.add_response(json=ok_no_fines, status_code=400)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().validate_credentials_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "unknown error" in ctx.value.error_message
 
 
@@ -152,11 +159,12 @@ async def test_verify_credentials_api_html_returned(
                             'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().validate_credentials_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "malformed response" in ctx.value.error_message
 
 
@@ -170,11 +178,12 @@ async def test_verify_credentials_api_too_many_requests(
                             'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().validate_credentials_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().validate_credentials_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_TOO_MANY_REQUESTS
     assert "too many requests" in ctx.value.error_message
 
 # endregion
@@ -191,7 +200,7 @@ async def test_check_obligations_no_fines(
 
     httpx_mock.add_response(json=ok_no_fines)
 
-    resp = await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+    resp = await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 0
@@ -205,7 +214,7 @@ async def test_check_obligations_field_mapping_success(
 
     httpx_mock.add_response(json=ok_fine_served)
 
-    resp = await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+    resp = await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
@@ -235,7 +244,7 @@ async def test_check_obligations_has_served(
 
     httpx_mock.add_response(json=ok_fine_served)
 
-    resp = await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+    resp = await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
@@ -250,7 +259,7 @@ async def test_check_obligations_has_not_served(
 
     httpx_mock.add_response(json=ok_fine_not_served)
 
-    resp = await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+    resp = await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
@@ -266,11 +275,12 @@ async def test_check_obligations_invalid_user_data_sent(
     httpx_mock.add_response(json=err_nodatafound)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_USER_NOT_FOUND_ONLINE
     assert ctx.value.error_message == ERR_INVALID_USER_DATA
 
 
@@ -281,11 +291,12 @@ async def test_check_obligations_api_timeout(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_exception(httpx.TimeoutException(""))
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TIMEOUT
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_TIMEOUT
     assert "request timed out for" in ctx.value.error_message
 
 
@@ -298,11 +309,12 @@ async def test_check_obligations_api_down(
     httpx_mock.add_response(json=err_apidown, status_code=200)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_ERROR_READING_DATA
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_ERROR_READING_DATA
     assert "unable to process the request" in ctx.value.error_message
 
 
@@ -315,11 +327,12 @@ async def test_check_obligations_non_success_status_code(
     httpx_mock.add_response(json=ok_no_fines, status_code=400)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "unknown error" in ctx.value.error_message
 
 
@@ -331,7 +344,7 @@ async def test_check_obligations_sample2(
 
     httpx_mock.add_response(json=ok_sample2_6fines)
 
-    resp = await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+    resp = await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 6
@@ -349,11 +362,12 @@ async def test_check_obligations_api_html_returned(
                             'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "malformed response" in ctx.value.error_message
 
 
@@ -367,11 +381,12 @@ async def test_check_obligations_api_too_many_requests(
                             'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_business(EGN, LICENSE, BULSTAT)
+        await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_TOO_MANY_REQUESTS
     assert "too many requests" in ctx.value.error_message
 
 # endregion

@@ -9,6 +9,7 @@ from kat_bulgaria.kat_api_client import (
     KatApiClient,
     KatError,
     KatErrorType,
+    KatErrorSubtype,
     ERR_INVALID_EGN,
     ERR_INVALID_LICENSE,
     ERR_INVALID_USER_DATA,
@@ -44,7 +45,8 @@ async def test_verify_credentials_local_invalid_egn(httpx_mock: HTTPXMock) -> No
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_EGN_INVALID
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_EGN_INVALID
     assert ctx.value.error_message == ERR_INVALID_EGN
 
 
@@ -57,7 +59,8 @@ async def test_verify_credentials_local_invalid_driver_license(httpx_mock: HTTPX
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_ID_DOCUMENT_INVALID
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_DRIVING_LICENSE_INVALID
     assert ctx.value.error_message == ERR_INVALID_LICENSE
 
 
@@ -74,7 +77,8 @@ async def test_verify_credentials_api_invalid_user_data_sent(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_USER_NOT_FOUND_ONLINE
     assert ctx.value.error_message == ERR_INVALID_USER_DATA
 
 
@@ -89,7 +93,8 @@ async def test_verify_credentials_api_timeout(httpx_mock: HTTPXMock) -> None:
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TIMEOUT
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_TIMEOUT
     assert "request timed out for" in ctx.value.error_message
 
 
@@ -106,7 +111,8 @@ async def test_verify_credentials_api_down(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_ERROR_READING_DATA
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_ERROR_READING_DATA
     assert ctx.value.error_message == ERR_API_DOWN
 
 
@@ -123,7 +129,8 @@ async def test_verify_credentials_non_success_status_code(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "unknown error" in ctx.value.error_message
 
 
@@ -141,7 +148,8 @@ async def test_verify_credentials_api_html_returned(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "malformed response" in ctx.value.error_message
 
 
@@ -159,7 +167,8 @@ async def test_verify_credentials_api_too_many_requests(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_TOO_MANY_REQUESTS
     assert "too many requests" in ctx.value.error_message
 
 # endregion
@@ -255,7 +264,8 @@ async def test_check_obligations_invalid_user_data_sent(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_USER_NOT_FOUND_ONLINE
     assert ctx.value.error_message == ERR_INVALID_USER_DATA
 
 
@@ -270,7 +280,8 @@ async def test_check_obligations_api_timeout(httpx_mock: HTTPXMock) -> None:
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TIMEOUT
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_TIMEOUT
     assert "request timed out for" in ctx.value.error_message
 
 
@@ -287,7 +298,8 @@ async def test_check_obligations_api_down(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_ERROR_READING_DATA
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_ERROR_READING_DATA
     assert "unable to process the request" in ctx.value.error_message
 
 
@@ -304,7 +316,8 @@ async def test_check_obligations_non_success_status_code(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "unknown error" in ctx.value.error_message
 
 
@@ -338,7 +351,8 @@ async def test_check_obligations_api_html_returned(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_UNKNOWN_ERROR
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "malformed response" in ctx.value.error_message
 
 
@@ -356,7 +370,8 @@ async def test_check_obligations_api_too_many_requests(
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
-    assert ctx.value.error_type == KatErrorType.API_TOO_MANY_REQUESTS
+    assert ctx.value.error_type == KatErrorType.API_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.API_TOO_MANY_REQUESTS
     assert "too many requests" in ctx.value.error_message
 
 # endregion

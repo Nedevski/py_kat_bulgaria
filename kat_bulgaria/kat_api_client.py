@@ -5,7 +5,7 @@ import re
 import httpx
 from httpx import AsyncClient
 
-from .errors import KatError, KatErrorType
+from .errors import KatError, KatErrorType, KatErrorSubtype
 from .data_models import KatObligationApiResponse, KatObligation
 
 _REQUEST_TIMEOUT = 10
@@ -45,11 +45,11 @@ class KatApiClient:
         for od in data.obligations_data:
             if od.error_no_data_found is True:
                 raise KatError(
-                    KatErrorType.VALIDATION_USER_NOT_FOUND_ONLINE, ERR_INVALID_USER_DATA)
+                    KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_USER_NOT_FOUND_ONLINE, ERR_INVALID_USER_DATA)
 
             if od.error_reading_data is True:
                 raise KatError(
-                    KatErrorType.API_ERROR_READING_DATA, ERR_API_DOWN)
+                    KatErrorType.API_ERROR, KatErrorSubtype.API_ERROR_READING_DATA, ERR_API_DOWN)
 
     async def _get_obligations_from_url(
         self, url: str, identifier: str, external_httpx_client: AsyncClient = None
@@ -76,7 +76,7 @@ class KatApiClient:
 
                     if (resp.headers.get("content-type") == "text/html" and "Достигнат е максимално допустимият брой заявки към системата" in resp.text):
                         raise KatError(
-                            KatErrorType.API_TOO_MANY_REQUESTS,
+                            KatErrorType.API_ERROR, KatErrorSubtype.API_TOO_MANY_REQUESTS,
                             ERR_API_TOO_MANY_REQUESTS.format(
                                 identifier=identifier)
                         )
@@ -84,21 +84,21 @@ class KatApiClient:
                     data = resp.json()
 
         except httpx.TimeoutException as ex_timeout:
-            raise KatError(KatErrorType.API_TIMEOUT, ERR_API_TIMEOUT.format(
+            raise KatError(KatErrorType.API_ERROR, KatErrorSubtype.API_TIMEOUT, ERR_API_TIMEOUT.format(
                 identifier=identifier)) from ex_timeout
 
         except httpx.HTTPError as ex_apierror:
-            raise KatError(KatErrorType.API_UNKNOWN_ERROR, ERR_API_UNKNOWN.format(
+            raise KatError(KatErrorType.API_ERROR, KatErrorSubtype.API_UNKNOWN_ERROR, ERR_API_UNKNOWN.format(
                 error=str(ex_apierror))) from ex_apierror
 
         except JSONDecodeError as ex_decode_err:
-            raise KatError(KatErrorType.API_UNKNOWN_ERROR, ERR_API_MALFORMED_RESP.format(
+            raise KatError(KatErrorType.API_ERROR, KatErrorSubtype.API_UNKNOWN_ERROR, ERR_API_MALFORMED_RESP.format(
                 data=str(ex_decode_err))) from ex_decode_err
 
         if "obligationsData" not in data:
             # This should never happen.
             # If we go in this if, this probably means they changed their schema
-            raise KatError(KatErrorType.API_INVALID_SCHEMA,
+            raise KatError(KatErrorType.API_ERROR, KatErrorSubtype.API_INVALID_SCHEMA,
                            ERR_API_MALFORMED_RESP.format(data=data))
 
         api_data = KatObligationApiResponse(data)
@@ -126,13 +126,13 @@ class KatApiClient:
 
         # Validate EGN
         if egn is None or re.search(REGEX_EGN, egn) is None:
-            raise KatError(KatErrorType.VALIDATION_EGN_INVALID,
+            raise KatError(KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_EGN_INVALID,
                            ERR_INVALID_EGN)
 
         # Validate License Number
         if license_number is None or re.search(REGEX_DRIVING_LICENSE, license_number) is None:
             raise KatError(
-                KatErrorType.VALIDATION_ID_DOCUMENT_INVALID, ERR_INVALID_LICENSE)
+                KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_DRIVING_LICENSE_INVALID, ERR_INVALID_LICENSE)
 
         data = await self.get_obligations_individual(egn, license_number, external_httpx_client)
 
@@ -155,18 +155,18 @@ class KatApiClient:
 
         # Validate EGN
         if egn is None or re.search(REGEX_EGN, egn) is None:
-            raise KatError(KatErrorType.VALIDATION_EGN_INVALID,
+            raise KatError(KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_EGN_INVALID,
                            ERR_INVALID_EGN)
 
         # Validate Government ID Number
         if govt_id_number is None or re.search(REGEX_GOVT_ID, govt_id_number) is None:
             raise KatError(
-                KatErrorType.VALIDATION_ID_DOCUMENT_INVALID, ERR_INVALID_GOV_ID)
+                KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_GOV_ID_NUMBER_INVALID, ERR_INVALID_GOV_ID)
 
         # Validate BULSTAT
-        if govt_id_number is None or re.search(REGEX_BULSTAT, bulstat) is None:
+        if bulstat is None or re.search(REGEX_BULSTAT, bulstat) is None:
             raise KatError(
-                KatErrorType.VALIDATION_ID_DOCUMENT_INVALID, ERR_INVALID_BULSTAT)
+                KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_BULSTAT_INVALID, ERR_INVALID_BULSTAT)
 
         data = await self.get_obligations_business(egn, govt_id_number, bulstat, external_httpx_client)
 
