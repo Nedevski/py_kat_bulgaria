@@ -6,25 +6,42 @@ from enum import Enum
 class KatErrorType(Enum):
     """Different KAT api error types"""
 
-    VALIDATION_EGN_INVALID = 1
-    VALIDATION_ID_DOCUMENT_INVALID = 2
-    VALIDATION_USER_NOT_FOUND_ONLINE = 3
-    API_TOO_MANY_REQUESTS = 5
-    API_ERROR_READING_DATA = 6
-    API_UNKNOWN_ERROR = 7
-    API_TIMEOUT = 8
-    API_INVALID_SCHEMA = 9
+    VALIDATION_ERROR = "validation_failed"
+    API_ERROR = "api_error"
+
+
+class KatErrorSubtype(Enum):
+    """Different KAT api error subtypes"""
+
+    VALIDATION_EGN_INVALID = "invalid_egn"
+    VALIDATION_GOV_ID_NUMBER_INVALID = "invalid_gov_id_number"
+    VALIDATION_DRIVING_LICENSE_INVALID = "invalid_driving_license"
+    VALIDATION_BULSTAT_INVALID = "invalid_bulstat"
+    VALIDATION_USER_NOT_FOUND_ONLINE = "user_not_found_online"
+
+    API_TOO_MANY_REQUESTS = "api_err_too_many_requests"
+    API_ERROR_READING_DATA = "api_err_reading_data"
+    API_UNKNOWN_ERROR = "api_err_unknown"
+    API_TIMEOUT = "api_err_tiomeout"
+    API_INVALID_SCHEMA = "api_err_invalid_schema"
 
 
 class KatError(Exception):
     """Error wrapper"""
 
     error_type: KatErrorType
+    error_subtype: KatErrorSubtype
     error_message: str
 
-    def __init__(self, error_type: KatErrorType, error_message: str, *args: object) -> None:
+    def __init__(
+            self,
+            error_type: KatErrorType,
+            error_subtype: KatErrorSubtype,
+            error_message: str,
+            *args: object) -> None:
         super().__init__(*args)
         self.error_type = error_type
+        self.error_subtype = error_subtype
         self.error_message = error_message
 
     def __str__(self):
