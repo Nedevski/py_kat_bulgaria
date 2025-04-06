@@ -5,8 +5,8 @@ import asyncio
 from kat_bulgaria.kat_api_client import KatApiClient
 from kat_bulgaria.errors import KatError, KatErrorType, KatErrorSubtype
 
-INDIVIDUAL_EGN = "0011223344"
-INDIVIDUAL_DRIVER_LICENSE = "123456789"
+PERSON_EGN = "0011223344"
+PERSON_DRIVER_LICENSE = "123456789"
 
 BUSINESS_OWNER_EGN = "0011223344"
 BUSINESS_OWNER_GOVT_ID = "AA1234567"
@@ -19,11 +19,11 @@ async def sample_code():
     try:
         # For individuals:
         # Validates EGN and Driver License Number locally and with the API.
-        is_valid = await KatApiClient().validate_credentials_individual(INDIVIDUAL_EGN, INDIVIDUAL_DRIVER_LICENSE)
+        is_valid = await KatApiClient().validate_credentials_individual(PERSON_EGN, PERSON_DRIVER_LICENSE)
         print(f"Individual Credentials Valid: {is_valid}\n")
 
         # Checks if an individual has obligations, returns true or false.
-        obligations = await KatApiClient().get_obligations_individual(INDIVIDUAL_EGN, INDIVIDUAL_DRIVER_LICENSE)
+        obligations = await KatApiClient().get_obligations_individual(PERSON_EGN, PERSON_DRIVER_LICENSE)
         print(f"Individual Obligation Count: {len(obligations)}\n")
         print(f"Raw: {obligations}\n")
 
