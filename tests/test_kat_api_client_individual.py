@@ -53,7 +53,7 @@ async def test_verify_credentials_local_invalid_driver_license(httpx_mock: HTTPX
 
 @pytest.mark.asyncio
 async def test_verify_credentials_local_invalid_government_id(httpx_mock: HTTPXMock) -> None:
-    """Verify credentials - local Driver License validation failed."""
+    """Verify credentials - local Government ID validation failed."""
 
     with pytest.raises(KatError) as ctx:
         await KatApiClient().get_obligations_individual(EGN, PersonalIdType.NATIONAL_ID, INVALID_GOV_ID)

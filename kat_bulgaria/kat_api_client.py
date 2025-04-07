@@ -208,19 +208,21 @@ class KatApiClient:
         return await self.__get_obligations_from_url(url, identifier_type, identifier, external_httpx_client)
 
     async def get_obligations_business(
-        self, egn: str, identifier: str, bulstat: str, external_httpx_client: AsyncClient | None = None
+        self, egn: str, govt_id: str, bulstat: str, external_httpx_client: AsyncClient | None = None
     ) -> list[KatObligation]:
         """
-        Gets a list of obligations/fines for an individual
+        Gets a list of obligations/fines for a business entity
 
-        :param person_egn: EGN (National Identification Number)
-        :param driving_license_number: Driver's License Number
+        :param egn: EGN (National Identification Number)
+        :param govt_id: National ID Number
+        :param bulstat: Business BULSTAT
+        :param external_httpx_client: Externally created httpx client (optional)
         """
 
         self.__validate_credentials_business(
-            egn, identifier, bulstat)
+            egn, govt_id, bulstat)
 
         url = _URL_BUSINESS.format(
-            egn=egn, identifier=identifier, bulstat=bulstat)
+            egn=egn, identifier=govt_id, bulstat=bulstat)
 
-        return await self.__get_obligations_from_url(url, PersonalIdType.NATIONAL_ID, identifier, external_httpx_client)
+        return await self.__get_obligations_from_url(url, PersonalIdType.NATIONAL_ID, govt_id, external_httpx_client)
