@@ -22,21 +22,6 @@ from .conftest import EGN, GOV_ID, BULSTAT, INVALID_EGN, INVALID_GOV_ID, INVALID
 
 # region verify_credentials
 
-
-@pytest.mark.asyncio
-async def test_verify_credentials_success(
-    httpx_mock: HTTPXMock, ok_no_fines: pytest.fixture
-) -> None:
-    """Verify credentials - success."""
-
-    httpx_mock.add_response(json=ok_no_fines)
-
-    resp = await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert resp == []
-
-
 @pytest.mark.asyncio
 async def test_verify_credentials_local_invalid_egn(httpx_mock: HTTPXMock) -> None:
     """Verify credentials - local EGN validation failed."""
@@ -97,6 +82,22 @@ async def test_check_obligations_no_fines(
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 0
+
+
+@pytest.mark.asyncio
+async def test_check_obligations_sample2(
+    httpx_mock: HTTPXMock, ok_sample2_6fines: pytest.fixture
+) -> None:
+    """Check obligations - has served."""
+
+    httpx_mock.add_response(json=ok_sample2_6fines)
+
+    resp = await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
+
+    assert len(httpx_mock.get_requests()) == 1
+    assert len(resp) == 6
+    assert sum(o.is_served for o in resp) == 2
+    assert sum(o.amount for o in resp) == 600
 
 
 @pytest.mark.asyncio
@@ -227,22 +228,6 @@ async def test_check_obligations_non_success_status_code(
     assert ctx.value.error_type == KatErrorType.API_ERROR
     assert ctx.value.error_subtype == KatErrorSubtype.API_UNKNOWN_ERROR
     assert "unknown error" in ctx.value.error_message
-
-
-@pytest.mark.asyncio
-async def test_check_obligations_sample2(
-    httpx_mock: HTTPXMock, ok_sample2_6fines: pytest.fixture
-) -> None:
-    """Check obligations - has served."""
-
-    httpx_mock.add_response(json=ok_sample2_6fines)
-
-    resp = await KatApiClient().get_obligations_business(EGN, GOV_ID, BULSTAT)
-
-    assert len(httpx_mock.get_requests()) == 1
-    assert len(resp) == 6
-    assert sum(o.is_served for o in resp) == 2
-    assert sum(o.amount for o in resp) == 600
 
 
 @pytest.mark.asyncio

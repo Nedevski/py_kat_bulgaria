@@ -140,7 +140,7 @@ class KatApiClient:
 
         # Validate Driving License Number
         if document_type == PersonalIdType.NATIONAL_ID:
-            if document_number is None or re.search(REGEX_DRIVING_LICENSE, document_number) is None:
+            if document_number is None or re.search(REGEX_GOVT_ID, document_number) is None:
                 raise KatError(
                     KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_GOV_ID_NUMBER_INVALID, ERR_INVALID_GOV_ID)
 
