@@ -6,21 +6,24 @@ import httpx
 from httpx import AsyncClient
 
 from .errors import KatError, KatErrorType, KatErrorSubtype
-from .data_models import KatObligationApiResponse, KatObligation
+from .data_models import KatObligationApiResponse, KatObligation, PersonalIdType
 
 _REQUEST_TIMEOUT = 10
-_KAT_INDIVIDUAL_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?obligatedPersonType=1&additinalDataForObligatedPersonType=1&mode=1&obligedPersonIdent={egn}&drivingLicenceNumber={license_number}"
-_КАТ_BUSINESS_URL = "https://e-uslugi.mvr.bg/api/Obligations/AND?obligatedPersonType=2&additinalDataForObligatedPersonType=1&mode=1&obligedPersonIdent={egn}&personalDocumentNumber={govt_id_number}&uic={bulstat}"
+
+_URL_PERSON_DRIVING_LICENSE = "https://e-uslugi.mvr.bg/api/Obligations/AND?obligatedPersonType=1&additinalDataForObligatedPersonType=1&mode=1&obligedPersonIdent={egn}&drivingLicenceNumber={identifier}"
+_URL_PERSON_GOV_ID = "https://e-uslugi.mvr.bg/api/Obligations/AND?obligatedPersonType=1&additinalDataForObligatedPersonType=2&mode=1&obligedPersonIdent={egn}&personalDocumentNumber={identifier}"
+_URL_BUSINESS = "https://e-uslugi.mvr.bg/api/Obligations/AND?obligatedPersonType=2&additinalDataForObligatedPersonType=1&mode=1&obligedPersonIdent={egn}&personalDocumentNumber={identifier}&uic={bulstat}"
 
 ERR_INVALID_EGN = "EGN is not valid."
 ERR_INVALID_LICENSE = "Driving License Number is not valid."
-ERR_INVALID_USER_DATA = "User data (EGN and Driving license number combination) is not valid."
-
 ERR_INVALID_GOV_ID = "Government ID Number is not valid."
 ERR_INVALID_BULSTAT = "BULSTAT is not valid."
 
-ERR_API_TOO_MANY_REQUESTS = "KAT API too many requests for ID={identifier}"
-ERR_API_TIMEOUT = "KAT API request timed out for ID={identifier}"
+ERR_INVALID_USER_DATA = "User data (EGN and Driving license number combination) is not valid."
+
+
+ERR_API_TOO_MANY_REQUESTS = "KAT API too many requests for {identifier_type}={identifier}"
+ERR_API_TIMEOUT = "KAT API request timed out for {identifier_type}={identifier}"
 ERR_API_DOWN = "KAT API was unable to process the request. Try again later."
 ERR_API_MALFORMED_RESP = " KAT API returned a malformed response: {data}"
 ERR_API_UNKNOWN = "KAT API returned an unknown error: {error}"
@@ -51,8 +54,12 @@ class KatApiClient:
                 raise KatError(
                     KatErrorType.API_ERROR, KatErrorSubtype.API_ERROR_READING_DATA, ERR_API_DOWN)
 
-    async def _get_obligations_from_url(
-        self, url: str, identifier: str, external_httpx_client: AsyncClient = None
+    async def __get_obligations_from_url(
+        self,
+        url: str,
+        identifier_type: PersonalIdType,
+        identifier: str,
+        external_httpx_client: AsyncClient | None = None
     ) -> list[KatObligation]:
         """
         Gets a list of obligations/fines from URL
@@ -78,6 +85,7 @@ class KatApiClient:
                         raise KatError(
                             KatErrorType.API_ERROR, KatErrorSubtype.API_TOO_MANY_REQUESTS,
                             ERR_API_TOO_MANY_REQUESTS.format(
+                                identifier_type=identifier_type,
                                 identifier=identifier)
                         )
 
@@ -85,7 +93,9 @@ class KatApiClient:
 
         except httpx.TimeoutException as ex_timeout:
             raise KatError(KatErrorType.API_ERROR, KatErrorSubtype.API_TIMEOUT, ERR_API_TIMEOUT.format(
-                identifier=identifier)) from ex_timeout
+                identifier_type=identifier_type,
+                identifier=identifier)
+            ) from ex_timeout
 
         except httpx.HTTPError as ex_apierror:
             raise KatError(KatErrorType.API_ERROR, KatErrorSubtype.API_UNKNOWN_ERROR, ERR_API_UNKNOWN.format(
@@ -98,8 +108,11 @@ class KatApiClient:
         if "obligationsData" not in data:
             # This should never happen.
             # If we go in this if, this probably means they changed their schema
-            raise KatError(KatErrorType.API_ERROR, KatErrorSubtype.API_INVALID_SCHEMA,
-                           ERR_API_MALFORMED_RESP.format(data=data))
+            raise KatError(
+                KatErrorType.API_ERROR,
+                KatErrorSubtype.API_INVALID_SCHEMA,
+                ERR_API_MALFORMED_RESP.format(data=data)
+            )
 
         api_data = KatObligationApiResponse(data)
         self.__validate_response(api_data)
@@ -111,47 +124,40 @@ class KatApiClient:
 
         return response
 
-    async def validate_credentials_individual(
+    def __validate_credentials_individual(
             self,
             egn: str,
-            license_number: str,
-            external_httpx_client: AsyncClient = None) -> bool:
-        """
-        Validates the combination of EGN and License number for an individual
-
-        :param person_egn: EGN (National Identification Number)
-        :param driving_license_number: Driver's License Number
-
-        """
+            document_type: PersonalIdType,
+            document_number: str):
+        """Validates the combination of EGN and License number for an individual."""
 
         # Validate EGN
         if egn is None or re.search(REGEX_EGN, egn) is None:
-            raise KatError(KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_EGN_INVALID,
-                           ERR_INVALID_EGN)
-
-        # Validate License Number
-        if license_number is None or re.search(REGEX_DRIVING_LICENSE, license_number) is None:
             raise KatError(
-                KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_DRIVING_LICENSE_INVALID, ERR_INVALID_LICENSE)
+                KatErrorType.VALIDATION_ERROR,
+                KatErrorSubtype.VALIDATION_EGN_INVALID,
+                ERR_INVALID_EGN)
 
-        data = await self.get_obligations_individual(egn, license_number, external_httpx_client)
+        # Validate Driving License Number
+        if document_type == PersonalIdType.NATIONAL_ID:
+            if document_number is None or re.search(REGEX_DRIVING_LICENSE, document_number) is None:
+                raise KatError(
+                    KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_GOV_ID_NUMBER_INVALID, ERR_INVALID_GOV_ID)
 
-        return data is not None
+        # Validate Driving License Number
+        if document_type == PersonalIdType.DRIVING_LICENSE:
+            if document_number is None or re.search(REGEX_DRIVING_LICENSE, document_number) is None:
+                raise KatError(
+                    KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_DRIVING_LICENSE_INVALID, ERR_INVALID_LICENSE)
 
-    async def validate_credentials_business(
+        return True
+
+    def __validate_credentials_business(
             self,
             egn: str,
-            govt_id_number: str,
-            bulstat: str,
-            external_httpx_client: AsyncClient = None) -> bool:
-        """
-        Validates the combination of EGN, Government ID Number and BULSTAT for a business
-
-        :param person_egn: EGN (National Identification Number)
-        :param govt_id_number: Government ID Number
-        :param bulstat: Business BULSTAT
-
-        """
+            identifier: str,
+            bulstat: str) -> bool:
+        """Validates the combination of EGN, Government ID Number and BULSTAT for a business."""
 
         # Validate EGN
         if egn is None or re.search(REGEX_EGN, egn) is None:
@@ -159,7 +165,7 @@ class KatApiClient:
                            ERR_INVALID_EGN)
 
         # Validate Government ID Number
-        if govt_id_number is None or re.search(REGEX_GOVT_ID, govt_id_number) is None:
+        if identifier is None or re.search(REGEX_GOVT_ID, identifier) is None:
             raise KatError(
                 KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_GOV_ID_NUMBER_INVALID, ERR_INVALID_GOV_ID)
 
@@ -168,27 +174,41 @@ class KatApiClient:
             raise KatError(
                 KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_BULSTAT_INVALID, ERR_INVALID_BULSTAT)
 
-        data = await self.get_obligations_business(egn, govt_id_number, bulstat, external_httpx_client)
-
-        return data is not None
+        return True
 
     async def get_obligations_individual(
-        self, egn: str, license_number: str, external_httpx_client: AsyncClient = None
+        self,
+        egn: str,
+        identifier_type: PersonalIdType,
+        identifier: str,
+        external_httpx_client: AsyncClient | None = None
     ) -> list[KatObligation]:
         """
         Gets a list of obligations/fines for an individual
 
-        :param person_egn: EGN (National Identification Number)
-        :param driving_license_number: Driver's License Number
+        :param egn: EGN (National Identification Number)
+        :param identifier_type: PersonalIdType.NATIONAL_ID or PersonalIdType.DRIVING_LICENSE
+        :param identifier: Number of identification card (National ID or Driving License)
+        :param external_httpx_client: Externally created httpx client (optional)
         """
 
-        url = _KAT_INDIVIDUAL_URL.format(
-            egn=egn, license_number=license_number)
+        self.__validate_credentials_individual(
+            egn, identifier_type, identifier)
 
-        return await self._get_obligations_from_url(url, license_number, external_httpx_client)
+        url: str
+
+        if identifier_type == PersonalIdType.NATIONAL_ID:
+            url = _URL_PERSON_GOV_ID.format(
+                egn=egn, identifier=identifier)
+
+        if identifier_type == PersonalIdType.DRIVING_LICENSE:
+            url = _URL_PERSON_DRIVING_LICENSE.format(
+                egn=egn, identifier=identifier)
+
+        return await self.__get_obligations_from_url(url, identifier_type, identifier, external_httpx_client)
 
     async def get_obligations_business(
-        self, egn: str, govt_id_number: str, bulstat: str, external_httpx_client: AsyncClient = None
+        self, egn: str, identifier: str, bulstat: str, external_httpx_client: AsyncClient | None = None
     ) -> list[KatObligation]:
         """
         Gets a list of obligations/fines for an individual
@@ -197,7 +217,10 @@ class KatApiClient:
         :param driving_license_number: Driver's License Number
         """
 
-        url = _КАТ_BUSINESS_URL.format(
-            egn=egn, govt_id_number=govt_id_number, bulstat=bulstat)
+        self.__validate_credentials_business(
+            egn, identifier, bulstat)
 
-        return await self._get_obligations_from_url(url, govt_id_number, external_httpx_client)
+        url = _URL_BUSINESS.format(
+            egn=egn, identifier=identifier, bulstat=bulstat)
+
+        return await self.__get_obligations_from_url(url, PersonalIdType.NATIONAL_ID, identifier, external_httpx_client)

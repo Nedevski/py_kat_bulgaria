@@ -3,50 +3,48 @@
 import asyncio
 
 from kat_bulgaria.kat_api_client import KatApiClient
+from kat_bulgaria.data_models import PersonalIdType
 from kat_bulgaria.errors import KatError, KatErrorType, KatErrorSubtype
-
-PERSON_EGN = "0011223344"
-PERSON_DRIVER_LICENSE = "123456789"
-
-BUSINESS_OWNER_EGN = "0011223344"
-BUSINESS_OWNER_GOVT_ID = "AA1234567"
-BUSINESS_BULSTAT = "123456789"
 
 
 async def sample_code():
     """Validates credentials"""
 
     try:
-        # For individuals:
-        # Validates EGN and Driver License Number locally and with the API.
-        is_valid = await KatApiClient().validate_credentials_individual(PERSON_EGN, PERSON_DRIVER_LICENSE)
-        print(f"Individual Credentials Valid: {is_valid}\n")
+        # Проверка за физически лица - лична карта:
+        obligations = await KatApiClient().get_obligations_individual(
+            egn="валидно_егн",
+            identifier_type=PersonalIdType.NATIONAL_ID,
+            identifier="номер_лична_карта"
+        )
+        print(f"Брой задължения - ФЛ/ЛК: {len(obligations)}\n")
+        print(f"Raw JSON: {obligations}\n")
 
-        # Checks if an individual has obligations, returns true or false.
-        obligations = await KatApiClient().get_obligations_individual(PERSON_EGN, PERSON_DRIVER_LICENSE)
-        print(f"Individual Obligation Count: {len(obligations)}\n")
-        print(f"Raw: {obligations}\n")
+        # Проверка за физически лица -  шофьорска книжка:
+        obligations = await KatApiClient().get_obligations_individual(
+            egn="валидно_егн",
+            identifier_type=PersonalIdType.DRIVING_LICENSE,
+            identifier="номер_шофьорска_книжка"
+        )
+        print(f"Брой задължения - ФЛ/ШК: {len(obligations)}\n")
+        print(f"Raw JSON: {obligations}\n")
 
-        # For businesses:
-        # Validates EGN, Government ID and BULSTAT locally and with the API.
-        is_valid = await KatApiClient().validate_credentials_business(BUSINESS_OWNER_EGN, BUSINESS_OWNER_GOVT_ID, BUSINESS_BULSTAT)
-        print(f"Business Credentials Valid: {is_valid}\n")
-
-        # Checks if an individual has obligations, returns true or false.
-        obligations = await KatApiClient().get_obligations_business(BUSINESS_OWNER_EGN, BUSINESS_OWNER_GOVT_ID, BUSINESS_BULSTAT)
-        print(f"Business Obligation Count: {len(obligations)}\n")
-        print(f"Raw: {obligations}\n")
+        # Проверка за юридически лица - лична карта:
+        obligations = await KatApiClient().get_obligations_business(
+            egn="валидно_егн",
+            identifier="номер_лична_карта",
+            bulstat="валиден_булстат"
+        )
+        print(f"Брой задължения - ЮЛ: {len(obligations)}\n")
+        print(f"Raw JSON: {obligations}\n")
 
     except KatError as err:
         # Code should throw only KatError.
         # Open an issue if you encounter another exception type.
-        print(f"Error Type: {err.error_type}\n")
         print(f"Error Message: {err.error_message}")
+        print(f"Error Type: {err.error_type}")
 
         if err.error_type == KatErrorType.VALIDATION_ERROR:
-
-            print("Invalid user input \n")
-
             if err.error_subtype in (
                 # Regex validation for EGN failed.
                 KatErrorSubtype.VALIDATION_EGN_INVALID,
@@ -57,12 +55,9 @@ async def sample_code():
                 # KAT API returned an error because the EGN/License combination was not found.
                 KatErrorSubtype.VALIDATION_USER_NOT_FOUND_ONLINE
             ):
-                print(f"Error subtype: {err.error_subtype} \n")
+                print(f"Error Subtype: {err.error_subtype} \n")
 
         if err.error_type == KatErrorType.API_ERROR:
-
-            print("Invalid user input \n")
-
             if err.error_subtype in (
 
                 # KAT API is slow. Happens couple of times per day.
@@ -82,7 +77,7 @@ async def sample_code():
                 # Open an issue if you encounter this.
                 KatErrorSubtype.API_INVALID_SCHEMA,
             ):
-                print(f"Error subtype: {err.error_subtype} \n")
+                print(f"Error Subtype: {err.error_subtype} \n")
 
 # Run the async function
 asyncio.run(sample_code())
