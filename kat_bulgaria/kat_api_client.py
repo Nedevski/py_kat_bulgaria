@@ -19,7 +19,7 @@ ERR_INVALID_LICENSE = "Driving License Number is not valid."
 ERR_INVALID_GOV_ID = "Government ID Number is not valid."
 ERR_INVALID_BULSTAT = "BULSTAT is not valid."
 
-ERR_INVALID_USER_DATA = "User data (EGN and Driving license number combination) is not valid."
+ERR_INVALID_USER_DATA = "User data (EGN and Identity Document combination) is not valid."
 
 
 ERR_API_TOO_MANY_REQUESTS = "KAT API too many requests for {identifier_type}={identifier}"
