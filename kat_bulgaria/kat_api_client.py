@@ -6,7 +6,7 @@ import httpx
 from httpx import AsyncClient
 
 from .errors import KatError, KatErrorType, KatErrorSubtype
-from .data_models import KatObligationApiResponse, KatObligation, PersonalIdType
+from .data_models import KatObligationApiResponse, KatObligation, PersonalDocumentType
 
 _REQUEST_TIMEOUT = 10
 
@@ -57,7 +57,7 @@ class KatApiClient:
     async def __get_obligations_from_url(
         self,
         url: str,
-        identifier_type: PersonalIdType,
+        identifier_type: PersonalDocumentType,
         identifier: str,
         external_httpx_client: AsyncClient | None = None
     ) -> list[KatObligation]:
@@ -127,7 +127,7 @@ class KatApiClient:
     def __validate_credentials_individual(
             self,
             egn: str,
-            document_type: PersonalIdType,
+            document_type: PersonalDocumentType,
             document_number: str):
         """Validates the combination of EGN and License number for an individual."""
 
@@ -139,13 +139,13 @@ class KatApiClient:
                 ERR_INVALID_EGN)
 
         # Validate Driving License Number
-        if document_type == PersonalIdType.NATIONAL_ID:
+        if document_type == PersonalDocumentType.NATIONAL_ID:
             if document_number is None or re.search(REGEX_GOVT_ID, document_number) is None:
                 raise KatError(
                     KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_GOV_ID_NUMBER_INVALID, ERR_INVALID_GOV_ID)
 
         # Validate Driving License Number
-        if document_type == PersonalIdType.DRIVING_LICENSE:
+        if document_type == PersonalDocumentType.DRIVING_LICENSE:
             if document_number is None or re.search(REGEX_DRIVING_LICENSE, document_number) is None:
                 raise KatError(
                     KatErrorType.VALIDATION_ERROR, KatErrorSubtype.VALIDATION_DRIVING_LICENSE_INVALID, ERR_INVALID_LICENSE)
@@ -179,7 +179,7 @@ class KatApiClient:
     async def get_obligations_individual(
         self,
         egn: str,
-        identifier_type: PersonalIdType,
+        identifier_type: PersonalDocumentType,
         identifier: str,
         external_httpx_client: AsyncClient | None = None
     ) -> list[KatObligation]:
@@ -187,7 +187,7 @@ class KatApiClient:
         Gets a list of obligations/fines for an individual
 
         :param egn: EGN (National Identification Number)
-        :param identifier_type: PersonalIdType.NATIONAL_ID or PersonalIdType.DRIVING_LICENSE
+        :param identifier_type: PersonalDocumentType.NATIONAL_ID or PersonalDocumentType.DRIVING_LICENSE
         :param identifier: Number of identification card (National ID or Driving License)
         :param external_httpx_client: Externally created httpx client (optional)
         """
@@ -197,11 +197,11 @@ class KatApiClient:
 
         url: str
 
-        if identifier_type == PersonalIdType.NATIONAL_ID:
+        if identifier_type == PersonalDocumentType.NATIONAL_ID:
             url = _URL_PERSON_GOV_ID.format(
                 egn=egn, identifier=identifier)
 
-        if identifier_type == PersonalIdType.DRIVING_LICENSE:
+        if identifier_type == PersonalDocumentType.DRIVING_LICENSE:
             url = _URL_PERSON_DRIVING_LICENSE.format(
                 egn=egn, identifier=identifier)
 
@@ -225,4 +225,4 @@ class KatApiClient:
         url = _URL_BUSINESS.format(
             egn=egn, identifier=govt_id, bulstat=bulstat)
 
-        return await self.__get_obligations_from_url(url, PersonalIdType.NATIONAL_ID, govt_id, external_httpx_client)
+        return await self.__get_obligations_from_url(url, PersonalDocumentType.NATIONAL_ID, govt_id, external_httpx_client)

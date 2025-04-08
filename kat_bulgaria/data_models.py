@@ -1,13 +1,12 @@
 """Data models"""
 
 from dataclasses import dataclass
-from enum import Enum
 
 from .helpers import strtobool
 
 
-class PersonalIdType(Enum):
-    """Type of ID."""
+class PersonalDocumentType:
+    """Personal Document Type."""
 
     DRIVING_LICENSE = "driving_license"
     NATIONAL_ID = "national_id"
