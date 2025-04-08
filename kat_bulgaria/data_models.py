@@ -5,6 +5,13 @@ from dataclasses import dataclass
 from .helpers import strtobool
 
 
+class PersonalDocumentType:
+    """Personal Document Type."""
+
+    DRIVING_LICENSE = "driving_license"
+    NATIONAL_ID = "national_id"
+
+
 @dataclass
 class KatObligation:
     """Single obligation model."""
