@@ -6,7 +6,7 @@
 ![PyPI Downloads](https://img.shields.io/pypi/dm/kat_bulgaria?style=flat-square)
 ![Code size](https://img.shields.io/github/languages/code-size/nedevski/py_kat_bulgaria?style=flat-square)
 
-С този пакет могат да се извършват програмни проверки за налични глоби към [МВР](https://e-uslugi.mvr.bg/services/kat-obligations).
+Този пакет позволява да се извършват лесни програмни проверки за налични глоби към [МВР](https://e-uslugi.mvr.bg/services/kat-obligations).
 
 Цялата библиотека е обикновен wrapper около официалната система. Библиотеката **НЕ** запазва или логва вашите данни никъде. Данните са директно предадени на системата на МВР
 
