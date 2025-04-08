@@ -127,7 +127,7 @@ class KatApiClient:
     def __validate_credentials_individual(
             self,
             egn: str,
-            document_type: PersonalDocumentType,
+            document_type: str,
             document_number: str):
         """Validates the combination of EGN and License number for an individual."""
 
@@ -179,7 +179,7 @@ class KatApiClient:
     async def get_obligations_individual(
         self,
         egn: str,
-        identifier_type: PersonalDocumentType,
+        identifier_type: str,
         identifier: str,
         external_httpx_client: AsyncClient | None = None
     ) -> list[KatObligation]:
