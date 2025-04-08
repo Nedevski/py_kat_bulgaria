@@ -3,7 +3,7 @@
 import asyncio
 
 from kat_bulgaria.kat_api_client import KatApiClient
-from kat_bulgaria.data_models import PersonalIdType
+from kat_bulgaria.data_models import PersonalDocumentType
 from kat_bulgaria.errors import KatError, KatErrorType, KatErrorSubtype
 
 
@@ -14,7 +14,7 @@ async def sample_code():
         # Проверка за физически лица - лична карта:
         obligations = await KatApiClient().get_obligations_individual(
             egn="валидно_егн",
-            identifier_type=PersonalIdType.NATIONAL_ID,
+            identifier_type=PersonalDocumentType.NATIONAL_ID,
             identifier="номер_лична_карта"
         )
         print(f"Брой задължения - ФЛ/ЛК: {len(obligations)}\n")
@@ -23,7 +23,7 @@ async def sample_code():
         # Проверка за физически лица -  шофьорска книжка:
         obligations = await KatApiClient().get_obligations_individual(
             egn="валидно_егн",
-            identifier_type=PersonalIdType.DRIVING_LICENSE,
+            identifier_type=PersonalDocumentType.DRIVING_LICENSE,
             identifier="номер_шофьорска_книжка"
         )
         print(f"Брой задължения - ФЛ/ШК: {len(obligations)}\n")
@@ -32,7 +32,7 @@ async def sample_code():
         # Проверка за юридически лица - лична карта:
         obligations = await KatApiClient().get_obligations_business(
             egn="валидно_егн",
-            identifier="номер_лична_карта",
+            govt_id="номер_лична_карта",
             bulstat="валиден_булстат"
         )
         print(f"Брой задължения - ЮЛ: {len(obligations)}\n")
