@@ -35,36 +35,27 @@ For a full working sample usage script, check out [`sample_usage_script.py`](sam
 Remember to replace the dummy data in the constants with your own data.
 
 ```python
-# Проверка за физически лица - лична карта:
-obligations = await KatApiClient().get_obligations_individual(
-    egn="валидно_егн",
-    identifier_type=PersonalDocumentType.NATIONAL_ID,
-    identifier="номер_лична_карта"
-)
-print(f"Брой задължения - ФЛ/ЛК: {len(obligations)}\n")
-print(f"Raw JSON: {obligations}\n")
-```
+# For individuals:
+# Validates EGN and Driver License Number locally and with the API.
+is_valid = await KatApiClient().validate_credentials_individual(EGN, DRIVER_LICENSE)
+print(f"Individual Credentials Valid: {is_valid}\n")
 
-```python
-# Проверка за физически лица -  шофьорска книжка:
-obligations = await KatApiClient().get_obligations_individual(
-    egn="валидно_егн",
-    identifier_type=PersonalDocumentType.DRIVING_LICENSE,
-    identifier="номер_шофьорска_книжка"
-)
-print(f"Брой задължения - ФЛ/ШК: {len(obligations)}\n")
-print(f"Raw JSON: {obligations}\n")
-```
+# Checks if an individual has obligations, returns true or false.
+obligations = await KatApiClient().get_obligations_individual(EGN, DRIVER_LICENSE)
+print(f"Individual Obligation Count: {len(obligations)}\n")
+print(f"Raw: {obligations}\n")
 
-```python
-# Проверка за юридически лица - лична карта:
-obligations = await KatApiClient().get_obligations_business(
-    egn="валидно_егн",
-    govt_id="номер_лична_карта",
-    bulstat="валиден_булстат"
-)
-print(f"Брой задължения - ЮЛ: {len(obligations)}\n")
-print(f"Raw JSON: {obligations}\n")
+################
+
+# For businesses:
+# Validates EGN, Government ID and BULSTAT locally and with the API.
+is_valid = await KatApiClient().validate_credentials_business(EGN, GOVT_ID, BULSTAT)
+print(f"Business Credentials Valid: {is_valid}\n")
+
+# Checks if an individual has obligations, returns true or false.
+obligations = await KatApiClient().get_obligations_business(EGN, GOVT_ID, BULSTAT)
+print(f"Business Obligation Count: {len(obligations)}\n")
+print(f"Raw: {obligations}\n")
 ```
 
 ## Known raw API responses:
