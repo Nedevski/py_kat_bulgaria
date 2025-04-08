@@ -1,4 +1,4 @@
-## Summary
+## KAT България - Python пакет за програмна проверка за задължения към КАТ
 
 [![PyPI Link](https://img.shields.io/pypi/v/kat_bulgaria?style=flat-square)](https://pypi.org/project/kat-bulgaria/)
 ![Last release](https://img.shields.io/github/release-date/nedevski/py_kat_bulgaria?style=flat-square)
@@ -6,33 +6,32 @@
 ![PyPI Downloads](https://img.shields.io/pypi/dm/kat_bulgaria?style=flat-square)
 ![Code size](https://img.shields.io/github/languages/code-size/nedevski/py_kat_bulgaria?style=flat-square)
 
-This library allows you to check if you have fines from [KAT Bulgaria](https://e-uslugi.mvr.bg/services/kat-obligations) programatically.
+С този пакет могат да се извършват програмни проверки за налични глоби към [МВР](https://e-uslugi.mvr.bg/services/kat-obligations).
 
-The code here is a simple wrapper around the API, providing you with error validation and type safety.
+Цялата библиотека е обикновен wrapper около официалната система. Библиотеката **НЕ** запазва или логва вашите данни никъде. Данните са директно предадени на системата на МВР
 
-It does **NOT** save or log your data anywhere and it works with a single API endpoint.
-
-The reason this library is needed is because the government website is highly unstable and often throws random errors and Timeouts. This library handles all known bad responses (as of the time of writing) and provides a meaningful error message and an error code for every request.
+Причината да създам този пакет е че системата на МВР понякога е нестабилна и хвърля различни видове грешки и timeouts. С негова помощ се стандартизират и валидират отговорите от системата и се извличат данни във формат, готов за употреба, или в случай на грешки - биват извлечени категорияи на грешката и смислено съобщение за грешка.
 
 ---
 
-If you like my work, please consider donating
+Ако харесвате работата ми, почерпете ме с 1 бира в Ko-Fi:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/nedevski/tip)
 
 ---
 
-## Installation
+## Инсталиране
 
 ```shell
 pip install kat_bulgaria
 ```
 
-## Example usage script:
+## Примерен скрипт:
 
-For a full working sample usage script, check out [`sample_usage_script.py`](sample_usage_script.py).
+Добавил съм примерен работещ скрипт в репото -  [`sample_usage_script.py`](sample_usage_script.py).
 
-Remember to replace the dummy data in the constants with your own data.
+Преди да се изпълни скрипта, обновете примерните данни с реални ваши такива.
+
 
 ```python
 # Проверка за физически лица - лична карта:
@@ -67,16 +66,16 @@ print(f"Брой задължения - ЮЛ: {len(obligations)}\n")
 print(f"Raw JSON: {obligations}\n")
 ```
 
-## Known raw API responses:
+## API отговори:
 
-You can find sample API responses in `/tests/fixtures`.
+Примерни API отговори може да бъдат намерени в `/tests/fixtures`.
 
-I also document all sample responses in [this issue](https://github.com/Nedevski/py_kat_bulgaria/issues/2) for clarity.
+Старая се да документирам всички API отговори до които имам достъп в [това issue](https://github.com/Nedevski/py_kat_bulgaria/issues/2) с набавяне на по-голям сет тестови данни.
 
-If you have any fines, I would appreciate it if you attach the full JSON API response as a comment to the issue above.
+Ако някой има активни глоби, бих се радвал да получа целия JSON отговор от системата на МВР. Можете да го добавите в коментар в issue-то линкнато по-горе.
 
-You can get it by copying the url below and replacing EGN_GOES_HERE and LICENSE_GOES_HERE with your own data, then loading it in a browser.
+Можете да си набавите JSON-а, като копирате адреса отдолу и замените `EGN_GOES_HERE` и `LICENSE_GOES_HERE` с вашите ЕГН и номер на шофьорска книжка.
 
 https://e-uslugi.mvr.bg/api/Obligations/AND?obligatedPersonType=1&additinalDataForObligatedPersonType=1&mode=1&obligedPersonIdent=EGN_GOES_HERE&drivingLicenceNumber=LICENSE_GOES_HERE
 
-After that place the JSON in any text editor and remove personal data, but do not change the JSON structure itself.
+Силно препоръчително е преди публикуване да заредите JSON-a в тесктов едитор и да редактирате всички ваши лични данни в него.
