@@ -4,7 +4,10 @@
 
 name: Build and Test
 
-on: [push]
+push:
+  branches:
+    - master
+pull_request:
 
 permissions:
   contents: read
@@ -15,6 +18,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Disabling shallow clones is recommended for improving the relevancy of sonar reporting
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -29,4 +35,11 @@ jobs:
       - name: Run tests with pytest
         run: |
           pip install pytest pytest-cov
+          pytest --cov=./ --cov-report=xml --doctest-modules
+        run: |
           python -m pytest tests
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5.1.0 # Ex: v4.1.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          # SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
