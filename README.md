@@ -3,8 +3,9 @@
 [![PyPI Link](https://img.shields.io/pypi/v/kat_bulgaria?style=flat-square)](https://pypi.org/project/kat-bulgaria/)
 ![Last release](https://img.shields.io/github/release-date/nedevski/py_kat_bulgaria?style=flat-square)
 ![License](https://img.shields.io/github/license/nedevski/py_kat_bulgaria?style=flat-square)
-![PyPI Downloads](https://img.shields.io/pypi/dm/kat_bulgaria?style=flat-square)
 ![Code size](https://img.shields.io/github/languages/code-size/nedevski/py_kat_bulgaria?style=flat-square)
+[![Quality Gate](https://img.shields.io/sonar/quality_gate/Nedevski_py_kat_bulgaria?server=https%3A%2F%2Fsonarcloud.io)](https://sonarcloud.io/summary/overall?id=Nedevski_py_kat_bulgaria&branch=master)
+![Sonar Coverage](https://img.shields.io/sonar/coverage/Nedevski_py_kat_bulgaria?server=https%3A%2F%2Fsonarcloud.io&style=flat-square)
 
 Този пакет позволява да се извършват лесни програмни проверки за налични глоби към [МВР](https://e-uslugi.mvr.bg/services/kat-obligations).
 
@@ -28,10 +29,9 @@ pip install kat_bulgaria
 
 ## Примерен скрипт:
 
-Добавил съм примерен работещ скрипт в репото -  [`sample_usage_script.py`](sample_usage_script.py).
+Добавил съм примерен работещ скрипт в репото - [`sample_usage_script.py`](sample_usage_script.py).
 
 Преди да се изпълни скрипта, обновете примерните данни с реални ваши такива.
-
 
 ```python
 # Проверка за физически лица - лична карта:
