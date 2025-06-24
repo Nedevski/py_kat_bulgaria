@@ -10,15 +10,16 @@ from kat_bulgaria.kat_api_client import (
     KatError,
     KatErrorType,
     KatErrorSubtype,
+    ERR_INVALID_CAR_PLATE_NUM,
     ERR_INVALID_EGN,
     ERR_INVALID_LICENSE,
     ERR_INVALID_USER_DATA,
     ERR_INVALID_GOV_ID,
     ERR_API_DOWN
 )
-from kat_bulgaria.data_models import PersonalDocumentType
+from kat_bulgaria.data_models import PersonalIdentificationType
 
-from .conftest import EGN, LICENSE, INVALID_GOV_ID, INVALID_EGN, INVALID_LICENSE
+from .conftest import EGN, LICENSE, INVALID_GOV_ID, INVALID_EGN, INVALID_LICENSE, INVALID_CAR_PLATE
 
 
 # region verify_credentials
@@ -28,7 +29,7 @@ async def test_verify_credentials_local_invalid_egn(httpx_mock: HTTPXMock) -> No
     """Verify credentials - local EGN validation failed."""
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(INVALID_EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+        await KatApiClient().get_obligations_individual(INVALID_EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
@@ -42,7 +43,7 @@ async def test_verify_credentials_local_invalid_driver_license(httpx_mock: HTTPX
     """Verify credentials - local Driver License validation failed."""
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, INVALID_LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, INVALID_LICENSE)
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
@@ -56,13 +57,27 @@ async def test_verify_credentials_local_invalid_government_id(httpx_mock: HTTPXM
     """Verify credentials - local Government ID validation failed."""
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.NATIONAL_ID, INVALID_GOV_ID)
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.NATIONAL_ID, INVALID_GOV_ID)
 
     assert len(httpx_mock.get_requests()) == 0
     assert isinstance(ctx.value, KatError)
     assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
     assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_GOV_ID_NUMBER_INVALID
     assert ctx.value.error_message == ERR_INVALID_GOV_ID
+
+
+@pytest.mark.asyncio
+async def test_verify_credentials_local_invalid_car_plate(httpx_mock: HTTPXMock) -> None:
+    """Verify credentials - local Government ID validation failed."""
+
+    with pytest.raises(KatError) as ctx:
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.CAR_PLATE_NUM, INVALID_CAR_PLATE)
+
+    assert len(httpx_mock.get_requests()) == 0
+    assert isinstance(ctx.value, KatError)
+    assert ctx.value.error_type == KatErrorType.VALIDATION_ERROR
+    assert ctx.value.error_subtype == KatErrorSubtype.VALIDATION_CAR_PLATE_NUMBER_INVALID
+    assert ctx.value.error_message == ERR_INVALID_CAR_PLATE_NUM
 
 
 # endregion
@@ -79,7 +94,7 @@ async def test_check_obligations_no_fines(
 
     httpx_mock.add_response(json=ok_no_fines)
 
-    resp = await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 0
@@ -93,7 +108,7 @@ async def test_check_obligations_sample2(
 
     httpx_mock.add_response(json=ok_sample2_6fines)
 
-    resp = await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 6
@@ -109,7 +124,7 @@ async def test_check_obligations_field_mapping_success(
 
     httpx_mock.add_response(json=ok_fine_served)
 
-    resp = await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
@@ -139,7 +154,7 @@ async def test_check_obligations_has_served(
 
     httpx_mock.add_response(json=ok_fine_served)
 
-    resp = await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
@@ -154,7 +169,7 @@ async def test_check_obligations_has_not_served(
 
     httpx_mock.add_response(json=ok_fine_not_served)
 
-    resp = await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+    resp = await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert len(resp) == 1
@@ -170,7 +185,7 @@ async def test_check_obligations_invalid_user_data_sent(
     httpx_mock.add_response(json=err_nodatafound)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -186,7 +201,7 @@ async def test_check_obligations_api_timeout(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_exception(httpx.TimeoutException(""))
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -204,7 +219,7 @@ async def test_check_obligations_api_down(
     httpx_mock.add_response(json=err_apidown, status_code=200)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -222,7 +237,7 @@ async def test_check_obligations_non_success_status_code(
     httpx_mock.add_response(json=ok_no_fines, status_code=400)
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -241,7 +256,7 @@ async def test_check_obligations_api_html_returned(
                             'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)
@@ -260,7 +275,7 @@ async def test_check_obligations_api_too_many_requests(
                             'content-type': 'text/html'})
 
     with pytest.raises(KatError) as ctx:
-        await KatApiClient().get_obligations_individual(EGN, PersonalDocumentType.DRIVING_LICENSE, LICENSE)
+        await KatApiClient().get_obligations_individual(EGN, PersonalIdentificationType.DRIVING_LICENSE, LICENSE)
 
     assert len(httpx_mock.get_requests()) == 1
     assert isinstance(ctx.value, KatError)

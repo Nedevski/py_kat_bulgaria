@@ -16,6 +16,7 @@ class KatErrorSubtype(Enum):
     VALIDATION_EGN_INVALID = "invalid_egn"
     VALIDATION_GOV_ID_NUMBER_INVALID = "invalid_gov_id_number"
     VALIDATION_DRIVING_LICENSE_INVALID = "invalid_driving_license"
+    VALIDATION_CAR_PLATE_NUMBER_INVALID = "invalid_car_plate_number"
     VALIDATION_BULSTAT_INVALID = "invalid_bulstat"
     VALIDATION_USER_NOT_FOUND_ONLINE = "user_not_found_online"
 

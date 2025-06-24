@@ -3,7 +3,7 @@
 import asyncio
 
 from kat_bulgaria.kat_api_client import KatApiClient
-from kat_bulgaria.data_models import PersonalDocumentType
+from kat_bulgaria.data_models import PersonalIdentificationType
 from kat_bulgaria.errors import KatError, KatErrorType, KatErrorSubtype
 
 
@@ -14,7 +14,7 @@ async def sample_code():
         # Проверка за физически лица - лична карта:
         obligations = await KatApiClient().get_obligations_individual(
             egn="валидно_егн",
-            identifier_type=PersonalDocumentType.NATIONAL_ID,
+            identifier_type=PersonalIdentificationType.NATIONAL_ID,
             identifier="номер_лична_карта"
         )
         print(f"Брой задължения - ФЛ/ЛК: {len(obligations)}\n")
@@ -23,8 +23,17 @@ async def sample_code():
         # Проверка за физически лица -  шофьорска книжка:
         obligations = await KatApiClient().get_obligations_individual(
             egn="валидно_егн",
-            identifier_type=PersonalDocumentType.DRIVING_LICENSE,
+            identifier_type=PersonalIdentificationType.DRIVING_LICENSE,
             identifier="номер_шофьорска_книжка"
+        )
+        print(f"Брой задължения - ФЛ/ШК: {len(obligations)}\n")
+        print(f"Raw JSON: {obligations}\n")
+
+        # Проверка за физически лица - номер на автомобил (латиница, без интервали):
+        obligations = await KatApiClient().get_obligations_individual(
+            egn="валидно_егн",
+            identifier_type=PersonalIdentificationType.CAR_PLATE_NUM,
+            identifier="номер_автомобил_латиница_без_интервали"
         )
         print(f"Брой задължения - ФЛ/ШК: {len(obligations)}\n")
         print(f"Raw JSON: {obligations}\n")
