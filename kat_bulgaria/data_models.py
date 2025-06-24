@@ -5,11 +5,12 @@ from dataclasses import dataclass
 from .helpers import strtobool
 
 
-class PersonalDocumentType:
+class PersonalIdentificationType:
     """Personal Document Type."""
 
     DRIVING_LICENSE = "driving_license"
     NATIONAL_ID = "national_id"
+    CAR_PLATE_NUM = "car_plate_num"
 
 
 @dataclass
