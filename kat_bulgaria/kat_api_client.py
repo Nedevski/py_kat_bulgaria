@@ -31,7 +31,7 @@ ERR_API_DOWN = "KAT API was unable to process the request. Try again later."
 ERR_API_MALFORMED_RESP = " KAT API returned a malformed response: {data}"
 ERR_API_UNKNOWN = "KAT API returned an unknown error: {error}"
 
-REGEX_EGN = r"^[0-9]{2}[0,1,2,4][0-9][0-9]{2}[0-9]{4}$"
+REGEX_EGN = r"^[0-9]{10}$"
 REGEX_DRIVING_LICENSE = r"^[0-9]{9}$"
 
 # ID Format Supports "123456789" and "AA1234567"
